@@ -1,0 +1,35 @@
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+.idea/
+*.iml
+.settings/
+.project
+.classpath
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Uploads
+uploads/
+
+# Secrets (use application-template.yml instead)
+application.yml
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+storage/

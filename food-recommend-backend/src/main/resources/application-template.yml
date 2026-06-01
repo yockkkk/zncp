@@ -1,0 +1,56 @@
+server:
+  port: 8080
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  datasource:
+    url: jdbc:mysql://localhost:3306/food_recommend?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password:  YOUR_MYSQL_PASSWORD
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# AI 模型配置
+ai:
+  vision:
+    api-key: YOUR_MIMO_API_KEY
+    base-url: https://token-plan-cn.xiaomimimo.com/v1
+    model: mimo-v2-omni
+    max-tokens: 1500
+  embedding:
+    api-key: YOUR_DASHSCOPE_API_KEY
+    base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    model: text-embedding-v3
+    dimensions: 1024
+  rerank:
+    api-key: YOUR_MIMO_API_KEY
+    base-url: https://token-plan-cn.xiaomimimo.com/v1
+    model: mimo-v2.5-pro
+    max-tokens: 1500
+
+# Qdrant 向量数据库配置
+qdrant:
+  host: localhost
+  port: 6333
+  collection-name: dish_vector_collection
+
+# OSS 配置（本地开发可不填，使用 mock）
+oss:
+  enabled: false
+  endpoint: oss-cn-beijing.aliyuncs.com
+  access-key-id: YOUR_OSS_ACCESS_KEY_ID
+  access-key-secret: YOUR_OSS_ACCESS_KEY_SECRET
+  bucket-name: YOUR_OSS_BUCKET_NAME
+
+# 本地文件上传配置
+upload:
+  local-path: ./uploads
+  base-url: http://localhost:8080/uploads
