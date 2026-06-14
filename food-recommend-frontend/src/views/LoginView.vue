@@ -30,7 +30,7 @@
           </div>
         </div>
       </div>
-      <div class="left-bottom-text">© 2024 Smart F&B Recommendation · AI Driven</div>
+      <div class="left-bottom-text">© 2026 Smart F&B Recommendation · AI Driven</div>
     </div>
 
     <!-- 右侧表单区 -->
@@ -76,9 +76,9 @@
             />
           </el-form-item>
 
-          <!-- 滑块验证 -->
+          <!-- 智能验证码 -->
           <el-form-item prop="captcha">
-            <SliderCaptcha ref="captchaRef" @verify="onCaptchaPass" />
+            <SmartCaptcha ref="captchaRef" :attempts="captchaAttempts" @verify="onCaptchaVerify" />
           </el-form-item>
 
           <el-form-item>
@@ -122,7 +122,7 @@
             </div>
           </el-form-item>
           <el-form-item>
-            <SliderCaptcha ref="captchaRef2" @verify="onCaptchaPass" />
+            <SmartCaptcha ref="captchaRef2" :attempts="captchaAttempts" @verify="onCaptchaVerify" />
           </el-form-item>
           <el-form-item>
             <el-button
@@ -148,7 +148,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock, Phone, Message } from '@element-plus/icons-vue'
-import SliderCaptcha from '../components/SliderCaptcha.vue'
+import SmartCaptcha from '../components/SmartCaptcha.vue'
 import api from '../api'
 import { useAuthStore } from '../stores/auth'
 
@@ -158,6 +158,7 @@ const auth = useAuthStore()
 const loading = ref(false)
 const loginMode = ref('password')
 const captchaOk = ref(false)
+const captchaAttempts = ref(0)
 const captchaRef = ref(null)
 const captchaRef2 = ref(null)
 
@@ -182,12 +183,18 @@ const codeCountdown = ref(0)
 function switchMode(mode) {
   loginMode.value = mode
   captchaOk.value = false
+  captchaAttempts.value = 0
   if (captchaRef.value) captchaRef.value.reset()
   if (captchaRef2.value) captchaRef2.value.reset()
 }
 
-function onCaptchaPass() {
-  captchaOk.value = true
+function onCaptchaVerify(passed) {
+  if (passed) {
+    captchaOk.value = true
+  } else {
+    captchaAttempts.value++
+    captchaOk.value = false
+  }
 }
 
 function sendCode() {
@@ -241,8 +248,9 @@ async function doLogin(username, password) {
     ElMessage.success('登录成功，欢迎回来！')
     router.push(auth.getDefaultPath())
   } catch (e) {
-    // 重置滑块
+    // 登录失败：重置验证码并增加尝试次数
     captchaOk.value = false
+    captchaAttempts.value++
     if (captchaRef.value) captchaRef.value.reset()
     if (captchaRef2.value) captchaRef2.value.reset()
   } finally {

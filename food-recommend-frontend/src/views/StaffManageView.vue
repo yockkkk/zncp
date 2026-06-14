@@ -75,7 +75,7 @@
 
 <script setup>
 import { ref, onMounted, reactive } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import api from '../api'
 
@@ -126,14 +126,23 @@ async function doSave() {
 
 async function toggleStatus(row) {
   const newStatus = row.status === 1 ? 0 : 1
+  const action = newStatus === 1 ? '启用' : '禁用'
   try {
+    await ElMessageBox.confirm(
+      `确定要${action}员工「${row.realName}」吗？`,
+      `${action}确认`,
+      { confirmButtonText: `确认${action}`, cancelButtonText: '取消', type: 'warning' }
+    )
     await api.put(`/owner/staff/${row.id}/status`, { status: newStatus })
     row.status = newStatus
-    ElMessage.success(newStatus === 1 ? '已启用' : '已禁用')
-  } catch (e) { /* handled */ }
+    ElMessage.success(`已${action}`)
+  } catch (e) {
+    if (e !== 'cancel') { /* API error handled by interceptor */ }
+  }
 }
 
 async function doDelete(id) {
+  // el-popconfirm already handles the confirmation UI
   try {
     await api.delete(`/owner/staff/${id}`)
     ElMessage.success('删除成功')
