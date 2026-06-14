@@ -78,7 +78,7 @@
 
           <!-- 智能验证码 -->
           <el-form-item prop="captcha">
-            <SmartCaptcha ref="captchaRef" :attempts="captchaAttempts" @verify="onCaptchaVerify" />
+            <SmartCaptcha ref="captchaRef" @verify="onCaptchaVerify" />
           </el-form-item>
 
           <el-form-item>
@@ -122,7 +122,7 @@
             </div>
           </el-form-item>
           <el-form-item>
-            <SmartCaptcha ref="captchaRef2" :attempts="captchaAttempts" @verify="onCaptchaVerify" />
+            <SmartCaptcha ref="captchaRef2" @verify="onCaptchaVerify" />
           </el-form-item>
           <el-form-item>
             <el-button
@@ -158,7 +158,6 @@ const auth = useAuthStore()
 const loading = ref(false)
 const loginMode = ref('password')
 const captchaOk = ref(false)
-const captchaAttempts = ref(0)
 const captchaRef = ref(null)
 const captchaRef2 = ref(null)
 
@@ -183,18 +182,12 @@ const codeCountdown = ref(0)
 function switchMode(mode) {
   loginMode.value = mode
   captchaOk.value = false
-  captchaAttempts.value = 0
   if (captchaRef.value) captchaRef.value.reset()
   if (captchaRef2.value) captchaRef2.value.reset()
 }
 
 function onCaptchaVerify(passed) {
-  if (passed) {
-    captchaOk.value = true
-  } else {
-    captchaAttempts.value++
-    captchaOk.value = false
-  }
+  captchaOk.value = passed
 }
 
 function sendCode() {
@@ -248,9 +241,8 @@ async function doLogin(username, password) {
     ElMessage.success('登录成功，欢迎回来！')
     router.push(auth.getDefaultPath())
   } catch (e) {
-    // 登录失败：重置验证码并增加尝试次数
+    // 登录失败：重置验证码
     captchaOk.value = false
-    captchaAttempts.value++
     if (captchaRef.value) captchaRef.value.reset()
     if (captchaRef2.value) captchaRef2.value.reset()
   } finally {

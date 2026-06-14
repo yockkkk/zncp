@@ -2,7 +2,7 @@
   <div class="smart-captcha">
     <!-- 模式 0: 滑块验证 -->
     <div v-if="mode === 'slider' && !passed" class="captcha-slider">
-      <div class="slider-track" ref="trackRef">
+      <div class="slider-track">
         <div class="slider-bg" :style="{ width: sliderLeft + 'px' }"></div>
         <div class="slider-text" :class="{ moving: isMoving }">
           {{ isMoving ? '' : '→ 按住滑块，拖动到最右边 →' }}
@@ -33,18 +33,34 @@
     <!-- 模式 2: 点击选中指定文字 -->
     <div v-else-if="mode === 'clickText' && !passed" class="captcha-click">
       <div class="click-prompt">
-        <span>👆</span> 请依次点击：<b>{{ clickTarget }}</b>
+        <span>👆</span> 请依次点击所有 <b>{{ clickTarget }}</b>
       </div>
       <div class="click-grid">
-        <span v-for="(ch, i) in clickChars" :key="i"
+        <span v-for="(item, i) in clickItems" :key="i"
           class="click-char"
-          :class="{ selected: clickSelected.includes(i), wrong: clickWrongIdx === i }"
+          :class="{ selected: item.selected, wrong: clickWrongIdx === i }"
           @click="onClickChar(i)">
-          {{ ch }}
+          {{ item.char }}
         </span>
       </div>
       <div class="click-progress">
-        已选 {{ clickSelected.length }} / {{ clickOrder.length }}
+        已选 {{ selectedCount }} / {{ clickTargetCount }}
+      </div>
+    </div>
+
+    <!-- 模式 3: 图片方向判断 -->
+    <div v-else-if="mode === 'direction' && !passed" class="captcha-direction">
+      <div class="dir-prompt">
+        <span>🧭</span> 请点击箭头指向 <b>{{ dirQuestion }}</b> 的图片
+      </div>
+      <div class="dir-grid">
+        <div v-for="(item, i) in dirItems" :key="i"
+          class="dir-card"
+          :class="{ selected: i === dirSelected, wrong: i === dirWrong }"
+          @click="checkDirection(i)">
+          <span class="dir-emoji">{{ item.emoji }}</span>
+          <span class="dir-label">{{ item.label }}</span>
+        </div>
       </div>
     </div>
 
@@ -54,10 +70,10 @@
       <span>验证通过</span>
     </div>
 
-    <!-- 模式切换提示 -->
+    <!-- 底部操作栏 -->
     <div class="captcha-actions" v-if="!passed">
-      <span class="mode-switch" @click="refreshCaptcha">🔄 换一种验证方式</span>
-      <span class="attempt-hint" v-if="attempts > 0">失败 {{ attempts }} 次</span>
+      <span class="mode-switch" @click.stop="refreshCaptcha">🔄 换一种验证方式</span>
+      <span class="attempt-hint" v-if="failCount > 0">失败 {{ failCount }} 次</span>
     </div>
   </div>
 </template>
@@ -67,12 +83,10 @@ import { ref, computed, onMounted } from 'vue'
 import { Check } from '@element-plus/icons-vue'
 
 const emit = defineEmits(['verify'])
-const props = defineProps({
-  attempts: { type: Number, default: 0 }
-})
 
 const passed = ref(false)
 const mode = ref('slider')
+const failCount = ref(0)  // 内部追踪真实失败次数
 const isMoving = ref(false)
 const sliderLeft = ref(0)
 const maxSlide = 240
@@ -83,42 +97,45 @@ const mathAnswer = ref(0)
 const mathOptions = ref([])
 const wrongAnswer = ref(null)
 
-// 点击验证
+// 点击文字验证（修复：使用对象数组保持索引一致性）
 const clickTarget = ref('')
-const clickOrder = ref([])
-const clickChars = ref([])
-const clickSelected = ref([])
+const clickTargetCount = ref(0)
+const clickItems = ref([])
 const clickWrongIdx = ref(null)
+const selectedCount = ref(0)
+let clickOrder = []  // 正确的点击顺序（字符值）
+
+// 方向验证
+const dirQuestion = ref('')
+const dirItems = ref([])
+const dirSelected = ref(null)
+const dirWrong = ref(null)
 
 onMounted(() => {
   pickMode()
 })
 
 function pickMode() {
-  // 根据尝试次数动态切换验证方式
-  const modes = ['slider', 'math', 'clickText']
-  // 首次随机，失败后加大难度
-  if (props.attempts === 0) {
-    mode.value = modes[Math.floor(Math.random() * 2)] // slider or math
-  } else if (props.attempts === 1) {
-    mode.value = modes[Math.floor(Math.random() * 3)]
+  const modes = ['slider', 'math', 'clickText', 'direction']
+  // 根据失败次数增加模式多样性
+  if (failCount.value === 0) {
+    mode.value = modes[Math.floor(Math.random() * 3)] // 前三种
   } else {
-    mode.value = modes[Math.floor(Math.random() * 3)]
+    mode.value = modes[Math.floor(Math.random() * 4)]
   }
   initCaptcha()
 }
 
 function initCaptcha() {
-  if (mode.value === 'slider') {
-    initSlider()
-  } else if (mode.value === 'math') {
-    initMath()
-  } else if (mode.value === 'clickText') {
-    initClickText()
+  switch (mode.value) {
+    case 'slider': initSlider(); break
+    case 'math': initMath(); break
+    case 'clickText': initClickText(); break
+    case 'direction': initDirection(); break
   }
 }
 
-// ===== 滑块 =====
+// ===== 滑块（修复：轻触不计数）=====
 function initSlider() {
   sliderLeft.value = 0
   isMoving.value = false
@@ -139,9 +156,14 @@ function onSliderStart(e) {
     document.removeEventListener('touchend', onEnd)
     if (sliderLeft.value >= maxSlide - 5) {
       onPass()
-    } else {
+    } else if (sliderLeft.value > 30) {
+      // 拖了一半以上才算真实尝试失败
       sliderLeft.value = 0
+      failCount.value++
       emit('verify', false)
+    } else {
+      // 轻触/微动，不计数，直接回弹
+      sliderLeft.value = 0
     }
   }
   document.addEventListener('mousemove', onMove)
@@ -163,8 +185,6 @@ function initMath() {
   const op = ops[Math.floor(Math.random() * ops.length)]
   mathQuestion.value = `${a} ${op.sign} ${b}`
   mathAnswer.value = op.result
-
-  // 生成干扰选项
   const opts = new Set([op.result])
   while (opts.size < 4) {
     const offset = Math.floor(Math.random() * 20) - 10
@@ -174,63 +194,117 @@ function initMath() {
   mathOptions.value = [...opts].sort(() => Math.random() - 0.5)
 }
 function checkMathAnswer(val) {
+  if (passed.value) return
   if (val === mathAnswer.value) {
     onPass()
   } else {
     wrongAnswer.value = val
-    setTimeout(() => { wrongAnswer.value = null; refreshCaptcha() }, 800)
+    failCount.value++
     emit('verify', false)
+    setTimeout(() => { wrongAnswer.value = null; refreshCaptcha() }, 800)
   }
 }
 
-// ===== 点击文字 =====
-const targets = [
-  { label: '「餐」字', chars: '餐饮推荐系统智能助理解析建模器' },
-  { label: '「推」字', chars: '推荐引擎智能餐饮平台助理解析方案' },
-  { label: '「智」字', chars: '智慧餐饮推荐系统工程助理解析模块' },
-  { label: '「饮」字', chars: '饮食推荐餐饮顾问解析学习训练饮酒' }
+// ===== 点击文字（修复：对象数组保持位置一致性）=====
+const textTargets = [
+  { label: '餐', chars: '餐饮推荐系统智能助理解析建模器' },
+  { label: '推', chars: '推荐引擎智能餐饮平台助理解析方案' },
+  { label: '智', chars: '智慧餐饮推荐系统工程助理解析模块' },
+  { label: '饮', chars: '饮食推荐餐饮顾问解析学习训练饮酒' }
 ]
 function initClickText() {
   clickSelected.value = []
   clickWrongIdx.value = null
-  const t = targets[Math.floor(Math.random() * targets.length)]
+  selectedCount.value = 0
+  const t = textTargets[Math.floor(Math.random() * textTargets.length)]
   clickTarget.value = t.label
-  clickOrder.value = []
+  // 统计目标字符出现次数
   const chars = t.chars.split('')
-  // 找到目标字的所有位置
-  const targetChar = t.label.charAt(1)
-  chars.forEach((c, i) => { if (c === targetChar) clickOrder.value.push(i) })
-  // 打乱显示
-  clickChars.value = [...chars].sort(() => Math.random() - 0.5)
+  clickTargetCount.value = chars.filter(c => c === t.label).length
+  // 构建带位置信息的对象数组，随机排列
+  clickItems.value = chars
+    .map((char, idx) => ({ char, originalIdx: idx, selected: false }))
+    .sort(() => Math.random() - 0.5)
+  // 正确的点击顺序：按 originalIdx 升序点击所有目标字符
+  clickOrder = chars
+    .map((c, i) => c === t.label ? i : -1)
+    .filter(i => i >= 0)
 }
-function onClickChar(idx) {
+function onClickChar(displayIdx) {
   if (passed.value) return
-  const expectedIdx = clickOrder.value[clickSelected.value.length]
-  if (idx === expectedIdx) {
-    clickSelected.value.push(idx)
-    if (clickSelected.value.length === clickOrder.value.length) {
+  const item = clickItems.value[displayIdx]
+  if (item.selected) return  // 已选过的跳过
+
+  // 检查这个位置的字符是否是下一个应该点的
+  const nextOriginalIdx = clickOrder[selectedCount.value]
+  if (item.originalIdx === nextOriginalIdx) {
+    item.selected = true
+    selectedCount.value++
+    if (selectedCount.value >= clickTargetCount.value) {
       onPass()
     }
   } else {
-    clickWrongIdx.value = idx
-    setTimeout(() => { clickWrongIdx.value = null; clickSelected.value = []; emit('verify', false) }, 600)
+    clickWrongIdx.value = displayIdx
+    failCount.value++
+    emit('verify', false)
+    setTimeout(() => {
+      clickWrongIdx.value = null
+      // 重置选中状态
+      clickItems.value.forEach(it => it.selected = false)
+      selectedCount.value = 0
+    }, 600)
   }
 }
 
+// ===== 方向判断（新模式）=====
+function initDirection() {
+  dirSelected.value = null
+  dirWrong.value = null
+  const directions = [
+    { emoji: '🐱', label: '小猫', dir: '上' },
+    { emoji: '🐟', label: '鱼', dir: '下' },
+    { emoji: '🌳', label: '树', dir: '左' },
+    { emoji: '☕', label: '咖啡', dir: '右' }
+  ]
+  const target = directions[Math.floor(Math.random() * directions.length)]
+  dirQuestion.value = target.dir
+  dirItems.value = directions.sort(() => Math.random() - 0.5)
+  // 存储正确答案
+  dirItems.value.forEach((item, i) => {
+    if (item.dir === target.dir) dirSelected.value = null
+  })
+}
+function checkDirection(i) {
+  if (passed.value) return
+  if (dirItems.value[i].dir === dirQuestion.value) {
+    dirSelected.value = i
+    onPass()
+  } else {
+    dirWrong.value = i
+    failCount.value++
+    emit('verify', false)
+    setTimeout(() => { dirWrong.value = null; refreshCaptcha() }, 800)
+  }
+}
+
+// ===== 通用 =====
 function onPass() {
   passed.value = true
   emit('verify', true)
 }
 
 function refreshCaptcha() {
+  // 仅仅切换模式，不算失败
   pickMode()
 }
 
 function reset() {
   passed.value = false
-  clickSelected.value = []
-  clickWrongIdx.value = null
+  failCount.value = 0
   sliderLeft.value = 0
+  clickItems.value.forEach(it => it.selected = false)
+  selectedCount.value = 0
+  clickWrongIdx.value = null
   pickMode()
 }
 
@@ -270,11 +344,7 @@ defineExpose({ reset })
 .slider-arrow { color: #909399; font-size: 12px; font-weight: bold; }
 
 /* === 数学 === */
-.captcha-math { }
-.math-question {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
-  font-size: 16px; font-weight: 600; color: #303133;
-}
+.math-question { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 16px; font-weight: 600; color: #303133; }
 .math-icon { font-size: 20px; }
 .math-text { letter-spacing: 3px; }
 .math-hint { color: #409eff; }
@@ -282,33 +352,39 @@ defineExpose({ reset })
 .math-opt {
   flex: 1; text-align: center; padding: 8px 0;
   border: 2px solid #dcdfe6; border-radius: 8px; cursor: pointer;
-  font-size: 18px; font-weight: 700; color: #303133;
-  transition: all 0.2s;
+  font-size: 18px; font-weight: 700; color: #303133; transition: all 0.2s;
 }
 .math-opt:hover { border-color: #409eff; background: #ecf5ff; }
 .math-opt.wrong { border-color: #f56c6c; background: #fef0f0; color: #f56c6c; animation: shake 0.4s; }
 
 /* === 点击文字 === */
-.captcha-click { }
 .click-prompt { font-size: 13px; color: #606266; margin-bottom: 10px; }
 .click-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .click-char {
   width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
-  border: 2px solid #dcdfe6; border-radius: 6px; cursor: pointer; font-size: 16px;
-  transition: all 0.2s;
+  border: 2px solid #dcdfe6; border-radius: 6px; cursor: pointer; font-size: 16px; transition: all 0.2s;
 }
 .click-char:hover { border-color: #409eff; background: #ecf5ff; }
 .click-char.selected { border-color: #67c23a; background: #f0f9eb; color: #67c23a; font-weight: 700; }
 .click-char.wrong { border-color: #f56c6c; background: #fef0f0; color: #f56c6c; animation: shake 0.4s; }
 .click-progress { font-size: 12px; color: #909399; }
 
+/* === 方向判断 === */
+.dir-prompt { font-size: 13px; color: #606266; margin-bottom: 10px; }
+.dir-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dir-card {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 12px 8px; border: 2px solid #dcdfe6; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+}
+.dir-card:hover { border-color: #409eff; background: #ecf5ff; }
+.dir-card.selected { border-color: #67c23a; background: #f0f9eb; }
+.dir-card.wrong { border-color: #f56c6c; background: #fef0f0; animation: shake 0.4s; }
+.dir-emoji { font-size: 32px; }
+.dir-label { font-size: 12px; color: #909399; }
+
 /* === 通用 === */
-.captcha-actions {
-  display: flex; justify-content: space-between; margin-top: 8px;
-}
-.mode-switch {
-  font-size: 12px; color: #909399; cursor: pointer;
-}
+.captcha-actions { display: flex; justify-content: space-between; margin-top: 8px; }
+.mode-switch { font-size: 12px; color: #909399; cursor: pointer; user-select: none; padding: 2px 4px; }
 .mode-switch:hover { color: #409eff; }
 .attempt-hint { font-size: 12px; color: #f56c6c; }
 
