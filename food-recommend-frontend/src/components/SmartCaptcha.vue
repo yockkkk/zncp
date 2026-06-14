@@ -33,7 +33,8 @@
     <!-- 模式 2: 点击选中指定文字 -->
     <div v-else-if="mode === 'clickText' && !passed" class="captcha-click">
       <div class="click-prompt">
-        <span>👆</span> 请依次点击所有 <b>{{ clickTarget }}</b>
+        👆 在下方文字中，按顺序点击所有 <b class="target-highlight">{{ clickTarget }}</b>
+        <span class="click-hint">（共 {{ clickTargetCount }} 个）</span>
       </div>
       <div class="click-grid">
         <span v-for="(item, i) in clickItems" :key="i"
@@ -44,7 +45,7 @@
         </span>
       </div>
       <div class="click-progress">
-        已选 {{ selectedCount }} / {{ clickTargetCount }}
+        已找到 {{ selectedCount }} / {{ clickTargetCount }}
       </div>
     </div>
 
@@ -205,12 +206,12 @@ function checkMathAnswer(val) {
   }
 }
 
-// ===== 点击文字（修复：对象数组保持位置一致性）=====
+// ===== 点击文字（修复：短字符串+多出现+清晰提示）=====
 const textTargets = [
-  { label: '餐', chars: '餐饮推荐系统智能助理解析建模器' },
-  { label: '推', chars: '推荐引擎智能餐饮平台助理解析方案' },
-  { label: '智', chars: '智慧餐饮推荐系统工程助理解析模块' },
-  { label: '饮', chars: '饮食推荐餐饮顾问解析学习训练饮酒' }
+  { label: '智', chars: '智慧智能智造智力智联' },
+  { label: '推', chars: '推进推动推理推演推手' },
+  { label: '餐', chars: '餐饮早餐午餐晚餐餐桌' },
+  { label: '系', chars: '系统系列联系体系系数' }
 ]
 function initClickText() {
   clickSelected.value = []
@@ -218,7 +219,6 @@ function initClickText() {
   selectedCount.value = 0
   const t = textTargets[Math.floor(Math.random() * textTargets.length)]
   clickTarget.value = t.label
-  // 统计目标字符出现次数
   const chars = t.chars.split('')
   clickTargetCount.value = chars.filter(c => c === t.label).length
   // 构建带位置信息的对象数组，随机排列
@@ -358,8 +358,13 @@ defineExpose({ reset })
 .math-opt.wrong { border-color: #f56c6c; background: #fef0f0; color: #f56c6c; animation: shake 0.4s; }
 
 /* === 点击文字 === */
-.click-prompt { font-size: 13px; color: #606266; margin-bottom: 10px; }
-.click-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.click-prompt { font-size: 13px; color: #606266; margin-bottom: 10px; line-height: 1.8; }
+.target-highlight {
+  color: #e6a23c; background: #fdf6ec; padding: 2px 6px; border-radius: 4px;
+  font-size: 16px;
+}
+.click-hint { font-size: 12px; color: #909399; }
+.click-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; justify-content: center; }
 .click-char {
   width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
   border: 2px solid #dcdfe6; border-radius: 6px; cursor: pointer; font-size: 16px; transition: all 0.2s;
