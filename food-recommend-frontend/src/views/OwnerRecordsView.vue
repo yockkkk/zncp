@@ -58,7 +58,7 @@ onMounted(fetchRecords)
 </script>
 
 <style scoped>
-.records-page { max-width: 1300px; }
-.page-title { font-size: 20px; margin-bottom: 20px; }
+.records-page { width: 100%; }
+.page-title { font-size: 20px; margin-bottom: 20px; font-weight: 600; }
 .tag-json { font-size: 12px; color: #606266; }
 </style>

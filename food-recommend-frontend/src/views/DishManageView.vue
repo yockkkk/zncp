@@ -172,7 +172,7 @@ onMounted(fetchDishes)
 </script>
 
 <style scoped>
-.dish-page { max-width: 1300px; margin: 0 auto; }
+.dish-page { width: 100%; }
 .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; }
 .toolbar-left { display: flex; gap: 12px; }
 .toolbar-right { display: flex; gap: 8px; }

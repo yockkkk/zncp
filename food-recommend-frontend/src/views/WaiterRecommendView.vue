@@ -204,7 +204,7 @@ async function adoptDish(dishId) {
 </script>
 
 <style scoped>
-.waiter-page { max-width: 1200px; margin: 0 auto; }
+.waiter-page { width: 100%; }
 .content-grid {
   display: grid;
   grid-template-columns: 380px 1fr;

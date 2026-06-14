@@ -81,13 +81,13 @@ onMounted(fetchData)
 </script>
 
 <style scoped>
-.dashboard-page { max-width: 1200px; }
-.page-title { font-size: 20px; margin-bottom: 20px; }
-.stat-cards { margin-bottom: 20px; }
-.stat-card { text-align: center; }
+.dashboard-page { width: 100%; }
+.page-title { font-size: 20px; margin-bottom: 20px; font-weight: 600; }
+.stat-cards { margin-bottom: 24px; }
+.stat-card { text-align: center; border-radius: 10px; }
 .stat-num { font-size: 32px; font-weight: 700; color: #303133; }
 .stat-num.green { color: #67c23a; }
 .stat-num.blue { color: #409eff; }
 .stat-label { font-size: 13px; color: #909399; margin-top: 4px; }
-.section-card { margin-bottom: 0; }
+.section-card { margin-bottom: 0; border-radius: 10px; }
 </style>

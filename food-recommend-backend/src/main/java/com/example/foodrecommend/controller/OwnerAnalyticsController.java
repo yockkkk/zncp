@@ -40,7 +40,8 @@ public class OwnerAnalyticsController {
      */
     @GetMapping("/analytics/overview")
     public Result<AnalyticsDTO> getOverview() {
-        List<RecommendationRecord> allRecords = recordMapper.selectList(null);
+        List<RecommendationRecord> allRecords = recordMapper.selectList(
+                new LambdaQueryWrapper<>());
         long totalRecs = allRecords.size();
         long adoptedCount = allRecords.stream()
                 .filter(r -> r.getAdopted() != null && r.getAdopted() == 1)
@@ -140,17 +141,19 @@ public class OwnerAnalyticsController {
         Map<Long, long[]> dishStats = new HashMap<>(); // dishId -> [total, adopted]
 
         for (RecommendationRecord r : records) {
-            if (r.getRecommendedDishIds() == null) continue;
+            if (r.getRecommendedDishIds() == null || r.getRecommendedDishIds().isEmpty()) continue;
             String[] ids = r.getRecommendedDishIds().split(",");
             for (String idStr : ids) {
-                Long dishId = Long.parseLong(idStr.trim());
-                long[] stats = dishStats.computeIfAbsent(dishId, k -> new long[2]);
-                stats[0]++;
-                if (r.getAdopted() != null && r.getAdopted() == 1
-                        && r.getAdoptedDishId() != null
-                        && r.getAdoptedDishId().equals(dishId)) {
-                    stats[1]++;
-                }
+                try {
+                    Long dishId = Long.parseLong(idStr.trim());
+                    long[] stats = dishStats.computeIfAbsent(dishId, k -> new long[2]);
+                    stats[0]++;
+                    if (r.getAdopted() != null && r.getAdopted() == 1
+                            && r.getAdoptedDishId() != null
+                            && r.getAdoptedDishId().equals(dishId)) {
+                        stats[1]++;
+                    }
+                } catch (NumberFormatException ignored) {}
             }
         }
 

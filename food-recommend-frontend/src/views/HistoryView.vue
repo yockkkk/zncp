@@ -90,7 +90,7 @@ onMounted(fetchHistory)
 </script>
 
 <style scoped>
-.history-page { max-width: 1200px; margin: 0 auto; }
+.history-page { width: 100%; }
 .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .hint { color: #909399; font-size: 13px; }
 .profile-preview { font-size: 13px; color: #606266; }
