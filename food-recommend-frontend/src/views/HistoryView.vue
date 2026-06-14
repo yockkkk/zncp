@@ -40,6 +40,13 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
+      <el-table-column label="采纳" width="90">
+        <template #default="{ row }">
+          <el-tag :type="row.adopted === 1 ? 'success' : 'info'" size="small">
+            {{ row.adopted === 1 ? '已采纳' : '未采纳' }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column prop="createTime" label="推荐时间" width="180">
         <template #default="{ row }">{{ row.createTime || '-' }}</template>
       </el-table-column>
@@ -59,10 +66,9 @@ const loading = ref(false)
 async function fetchHistory() {
   loading.value = true
   try {
-    const res = await api.get('/recommend/history')
+    const res = await api.get('/waiter/history')
     records.value = res.data || []
-  } catch (e) {
-    ElMessage.error('加载失败')
+  } catch (e) { /* error handled by interceptor */
   } finally { loading.value = false }
 }
 

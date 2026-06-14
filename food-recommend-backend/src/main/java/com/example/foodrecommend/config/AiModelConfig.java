@@ -12,6 +12,7 @@ public class AiModelConfig {
     private ModelProperties vision = new ModelProperties();
     private ModelProperties embedding = new ModelProperties();
     private ModelProperties rerank = new ModelProperties();
+    private ModelProperties script = new ModelProperties();
 
     @Data
     public static class ModelProperties {

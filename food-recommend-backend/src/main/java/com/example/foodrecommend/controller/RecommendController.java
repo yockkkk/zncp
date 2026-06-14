@@ -11,6 +11,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+/**
+ * 旧版推荐控制器（保持向后兼容）
+ * 推荐使用新的 WaiterRecommendController (/api/waiter/*)
+ */
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -19,6 +23,8 @@ public class RecommendController {
     private final RecommendService recommendService;
     private final RecommendationRecordMapper recordMapper;
 
+    /** @deprecated 使用 POST /api/waiter/recommend (标签+场景) */
+    @Deprecated
     @PostMapping("/recommend/image")
     public Result<RecommendResultDTO> recommendByImage(
             @RequestParam("file") MultipartFile file,
@@ -27,6 +33,8 @@ public class RecommendController {
         return Result.success("推荐成功", result);
     }
 
+    /** @deprecated 使用 GET /api/waiter/history */
+    @Deprecated
     @GetMapping("/recommend/history")
     public Result<List<RecommendationRecord>> listHistory() {
         List<RecommendationRecord> records = recordMapper.selectList(
@@ -35,17 +43,5 @@ public class RecommendController {
                         .last("LIMIT 50")
         );
         return Result.success(records);
-    }
-
-    @PostMapping("/admin/dish/vector/batch-rebuild")
-    public Result<String> batchRebuildVectors() {
-        recommendService.batchRebuildVectors();
-        return Result.success("批量向量生成完成", null);
-    }
-
-    @PostMapping("/admin/dish/{id}/vector/rebuild")
-    public Result<String> rebuildDishVector(@PathVariable Long id) {
-        recommendService.rebuildDishVector(id);
-        return Result.success("向量重建完成", null);
     }
 }

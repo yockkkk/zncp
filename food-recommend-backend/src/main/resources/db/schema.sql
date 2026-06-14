@@ -27,12 +27,18 @@ CREATE TABLE IF NOT EXISTS dish (
 CREATE TABLE IF NOT EXISTS recommendation_record (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '推荐记录ID',
     user_id BIGINT COMMENT '用户ID，可为空',
+    waiter_id BIGINT COMMENT '发起推荐的服务员ID',
     image_url VARCHAR(500) COMMENT '用户上传图片地址',
     video_url VARCHAR(500) COMMENT '用户上传视频地址',
+    scene_image_url VARCHAR(500) COMMENT '场景图片URL（可选）',
+    tag_input_json TEXT COMMENT '标签面板输入JSON',
     user_profile_json TEXT COMMENT 'AI分析出的用户画像JSON',
     query_text TEXT COMMENT '生成的推荐查询文本',
     recommended_dish_ids VARCHAR(500) COMMENT '推荐菜品ID列表',
     result_json TEXT COMMENT '最终推荐结果JSON',
+    script_result_json TEXT COMMENT '话术生成结果JSON',
+    adopted TINYINT DEFAULT 0 COMMENT '是否被采纳：1是，0否',
+    adopted_dish_id BIGINT COMMENT '被采纳的具体菜品ID',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP
 ) COMMENT='推荐记录表';
 
@@ -59,3 +65,29 @@ CREATE TABLE IF NOT EXISTS customer_profile (
     raw_result_json TEXT COMMENT 'AI原始分析结果',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP
 ) COMMENT='顾客画像表';
+
+-- 系统用户表
+CREATE TABLE IF NOT EXISTS sys_user (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL UNIQUE COMMENT '登录名',
+    password VARCHAR(255) NOT NULL COMMENT 'BCrypt加密密码',
+    real_name VARCHAR(50) COMMENT '真实姓名',
+    role VARCHAR(20) NOT NULL COMMENT '角色：WAITER/OWNER',
+    phone VARCHAR(20) COMMENT '手机号',
+    status TINYINT DEFAULT 1 COMMENT '状态：1启用，0禁用',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) COMMENT='系统用户表';
+
+-- 推荐反馈表
+CREATE TABLE IF NOT EXISTS recommendation_feedback (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    record_id BIGINT NOT NULL COMMENT '推荐记录ID',
+    waiter_id BIGINT NOT NULL COMMENT '服务员ID',
+    adopted_dish_id BIGINT COMMENT '被采纳菜品ID',
+    rating TINYINT COMMENT '1-5星评分',
+    note VARCHAR(500) COMMENT '反馈备注',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_record (record_id),
+    INDEX idx_waiter (waiter_id)
+) COMMENT='推荐反馈表';

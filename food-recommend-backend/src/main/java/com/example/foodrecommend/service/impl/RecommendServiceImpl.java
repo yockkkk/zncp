@@ -32,32 +32,29 @@ public class RecommendServiceImpl implements RecommendService {
     private final RecommendationRecordMapper recordMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    // ========== 5 Agent 服务 ==========
+    private final ScenePerceptionService scenePerceptionService;       // Agent 1
+    private final UserProfileService userProfileService;               // Agent 2
+    private final DishMatchingService dishMatchingService;             // Agent 3
+    private final RecommendationRankingService recommendationRankingService; // Agent 4
+    private final ScriptGenerationService scriptGenerationService;     // Agent 5
+
+    // ========== 旧版：图片推荐（保持兼容）==========
+
     @Override
     public RecommendResultDTO recommendByImage(MultipartFile file, Long userId) {
         String imageUrl = ossService.uploadFile(file);
 
         UserProfileDTO profile = visionModelService.analyzeImage(imageUrl);
 
-        String queryText = buildRecommendQueryText(profile);
+        String queryText = userProfileService.buildQueryText(profile);
 
-        List<Long> dishIds = vectorSearchService.searchSimilarDishes(queryText, 20);
-
-        if (dishIds.isEmpty()) {
-            throw new BusinessException("未找到相似菜品，请确认菜品向量已生成");
-        }
-
-        List<Dish> candidateDishes = dishMapper.selectByIds(dishIds);
-
-        List<Dish> filteredDishes = ruleFilter(candidateDishes, profile);
-
-        if (filteredDishes.isEmpty()) {
-            throw new BusinessException("过滤后无可推荐菜品");
-        }
+        List<Dish> filteredDishes = dishMatchingService.matchDishes(queryText, profile, 20);
 
         RerankResultDTO rerankResult = aiRerankService.rerank(profile, filteredDishes);
 
-        Long recordId = saveRecommendationRecord(userId, imageUrl, profile, queryText,
-                rerankResult.getRecommendations());
+        Long recordId = saveRecommendationRecord(userId, imageUrl, null, null,
+                profile, queryText, rerankResult.getRecommendations(), null);
 
         RecommendResultDTO result = new RecommendResultDTO();
         result.setRecordId(recordId);
@@ -67,6 +64,60 @@ public class RecommendServiceImpl implements RecommendService {
         result.setRecommendations(rerankResult.getRecommendations());
         return result;
     }
+
+    // ========== 新版：标签+场景推荐（5 Agent 管线）==========
+
+    @Override
+    public RecommendWithScriptDTO recommendByTags(RecommendRequestDTO request,
+                                                   MultipartFile sceneImage,
+                                                   Long waiterId) {
+        // 解析标签输入
+        TagInputDTO tags = parseTagInput(request.getTagInputJson());
+
+        // === Agent 1: 场景感知（可选，上传场景照片时触发）===
+        String sceneImageUrl = null;
+        SceneContextDTO sceneContext = null;
+        if (sceneImage != null && !sceneImage.isEmpty()) {
+            sceneImageUrl = ossService.uploadFile(sceneImage);
+            sceneContext = scenePerceptionService.analyzeScene(sceneImageUrl);
+        }
+
+        // === Agent 2: 用户画像构建 ===
+        UserProfileDTO profile = userProfileService.buildProfile(tags, sceneContext);
+        String queryText = userProfileService.buildQueryText(profile);
+
+        // === Agent 3: 菜品匹配 ===
+        List<Dish> candidateDishes = dishMatchingService.matchDishes(queryText, profile, 20);
+
+        // === Agent 4: 推荐排序 ===
+        RerankResultDTO rerankResult = recommendationRankingService.rank(profile, candidateDishes);
+
+        // === Agent 5: 话术生成 ===
+        ScriptResultDTO scriptResult = scriptGenerationService.generateScripts(
+                profile, rerankResult.getRecommendations());
+
+        // === 保存记录 ===
+        Long recordId = saveRecommendationRecord(null, sceneImageUrl,
+                waiterId, request.getTagInputJson(),
+                profile, queryText,
+                rerankResult.getRecommendations(),
+                scriptResult != null ? scriptResult.getDishScripts() : null);
+
+        // === 组装结果 ===
+        RecommendWithScriptDTO result = new RecommendWithScriptDTO();
+        result.setRecordId(recordId);
+        result.setUserProfile(profile);
+        result.setSummary(rerankResult.getSummary());
+        result.setRecommendations(rerankResult.getRecommendations());
+        result.setSceneContext(sceneContext);
+        if (scriptResult != null) {
+            result.setOpeningScript(scriptResult.getOpeningScript());
+            result.setDishScripts(scriptResult.getDishScripts());
+        }
+        return result;
+    }
+
+    // ========== 向量管理 ==========
 
     @Override
     public void batchRebuildVectors() {
@@ -108,6 +159,8 @@ public class RecommendServiceImpl implements RecommendService {
         dishService.updateById(dish);
     }
 
+    // ========== 私有方法 ==========
+
     private void rebuildSingleDishVector(Dish dish) {
         String embeddingText = dishService.buildDishEmbeddingText(dish);
         List<Float> vector = embeddingService.getEmbedding(embeddingText);
@@ -128,58 +181,17 @@ public class RecommendServiceImpl implements RecommendService {
         vectorSearchService.upsertDishVector(dish.getId(), vector, payload);
     }
 
-    private String buildRecommendQueryText(UserProfileDTO profile) {
-        StringBuilder sb = new StringBuilder();
-        if (profile.getPeopleCount() != null) {
-            sb.append("当前有").append(profile.getPeopleCount()).append("人用餐，");
-        }
-        if (profile.getAgeRange() != null) {
-            sb.append("用户年龄段约").append(profile.getAgeRange()).append("，");
-        }
-        if (profile.getDiningScene() != null) {
-            sb.append("场景为").append(profile.getDiningScene()).append("，");
-        }
-        if (profile.getEstimatedConsumptionLevel() != null) {
-            sb.append("消费能力").append(profile.getEstimatedConsumptionLevel()).append("，");
-        }
-        if (profile.getPossiblePreferences() != null && !profile.getPossiblePreferences().isEmpty()) {
-            sb.append("偏好").append(String.join("、", profile.getPossiblePreferences())).append("，");
-        }
-        if (profile.getHealthGoal() != null) {
-            sb.append("健康目标为").append(profile.getHealthGoal()).append("，");
-        }
-        sb.append("适合推荐价格合理、营养搭配合适、符合当前场景的菜品。");
-        return sb.toString();
-    }
-
-    private List<Dish> ruleFilter(List<Dish> dishes, UserProfileDTO profile) {
-        return dishes.stream()
-                .filter(dish -> dish.getStatus() != null && dish.getStatus() == 1)
-                .filter(dish -> dish.getStock() != null && dish.getStock() > 0)
-                .filter(dish -> priceMatch(dish, profile))
-                .sorted(Comparator.comparing(
-                        d -> d.getSales() != null ? d.getSales() : 0,
-                        Comparator.reverseOrder()))
-                .limit(5)
-                .collect(Collectors.toList());
-    }
-
-    private boolean priceMatch(Dish dish, UserProfileDTO profile) {
-        String level = profile.getEstimatedConsumptionLevel();
-        BigDecimal price = dish.getPrice();
-        if (price == null) return true;
-
-        if ("低".equals(level)) return price.compareTo(new BigDecimal("30")) <= 0;
-        if ("中等".equals(level)) return price.compareTo(new BigDecimal("80")) <= 0;
-        return true;
-    }
-
-    private Long saveRecommendationRecord(Long userId, String imageUrl, UserProfileDTO profile,
-                                           String queryText, List<RecommendDishDTO> results) {
+    private Long saveRecommendationRecord(Long userId, String imageUrl,
+                                           Long waiterId, String tagInputJson,
+                                           UserProfileDTO profile, String queryText,
+                                           List<RecommendDishDTO> results,
+                                           List<DishScriptDTO> dishScripts) {
         try {
             RecommendationRecord record = new RecommendationRecord();
             record.setUserId(userId);
+            record.setWaiterId(waiterId);
             record.setImageUrl(imageUrl);
+            record.setTagInputJson(tagInputJson);
             record.setUserProfileJson(objectMapper.writeValueAsString(profile));
             record.setQueryText(queryText);
 
@@ -190,11 +202,24 @@ public class RecommendServiceImpl implements RecommendService {
             record.setRecommendedDishIds(dishIds);
             record.setResultJson(objectMapper.writeValueAsString(results));
 
+            if (dishScripts != null && !dishScripts.isEmpty()) {
+                record.setScriptResultJson(objectMapper.writeValueAsString(dishScripts));
+            }
+
             recordMapper.insert(record);
             return record.getId();
         } catch (Exception e) {
             log.error("保存推荐记录失败", e);
             return null;
+        }
+    }
+
+    private TagInputDTO parseTagInput(String tagInputJson) {
+        try {
+            return objectMapper.readValue(tagInputJson, TagInputDTO.class);
+        } catch (Exception e) {
+            log.error("解析标签输入JSON失败", e);
+            throw new BusinessException("标签输入格式错误");
         }
     }
 

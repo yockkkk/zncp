@@ -83,3 +83,15 @@ INSERT INTO dish (name, category, price, calories, protein, fat, carbohydrate, t
 INSERT INTO prompt_template (code, name, content, type, status) VALUES
 ('VISION_ANALYZE_CUSTOMER', '顾客图片分析提示词', '你是一个餐饮推荐系统中的顾客场景分析助手。\n\n请根据用户上传的图片进行非身份识别式场景分析，不要识别具体身份，不要输出真实姓名，不要做敏感身份判断。\n\n请分析以下内容：\n1. 图片中大概有几人用餐\n2. 当前可能的用餐场景\n3. 用户可能偏好的餐饮类型\n4. 可能的消费能力等级：低 / 中 / 高\n5. 是否适合推荐减脂餐、营养餐、套餐、多人餐\n6. 推荐关键词\n\n请严格按照 JSON 格式输出：\n\n{\n  \"peopleCount\": 2,\n  \"ageRange\": \"20-30\",\n  \"diningScene\": \"朋友聚餐\",\n  \"clothingStyle\": \"休闲\",\n  \"estimatedConsumptionLevel\": \"中等\",\n  \"possiblePreferences\": [\"性价比\", \"营养均衡\", \"清淡\"],\n  \"healthGoal\": \"日常均衡饮食\",\n  \"recommendationKeywords\": [\"两人餐\", \"价格适中\", \"营养均衡\"]\n}', 'vision', 1),
 ('RERANK_DISH_RECOMMEND', '菜品重排序提示词', '你是一个智能餐饮推荐专家。\n\n现在系统已经从真实菜品库中召回了一批候选菜品，请你根据用户画像对菜品进行重排序。\n\n你必须遵守以下规则：\n1. 只能从候选菜品中选择，不允许编造数据库中不存在的菜品。\n2. 推荐结果需要考虑营养价值、性价比、人数、用餐场景、口味偏好。\n3. 如果用户偏好减脂，应优先推荐低脂、高蛋白、低热量菜品。\n4. 如果是多人用餐，应优先推荐组合菜、套餐或适合分享的菜品。\n5. 输出必须是 JSON 格式。\n\n用户画像：\n{{userProfile}}\n\n候选菜品：\n{{candidateDishes}}\n\n请输出：\n{\n  \"summary\": \"整体推荐说明\",\n  \"recommendations\": [\n    {\n      \"dishId\": 1,\n      \"name\": \"菜品名称\",\n      \"rank\": 1,\n      \"score\": 95,\n      \"reason\": \"推荐理由\",\n      \"nutritionComment\": \"营养评价\",\n      \"costPerformanceComment\": \"性价比评价\"\n    }\n  ]\n}', 'rerank', 1);
+
+-- 场景分析提示词
+INSERT INTO prompt_template (code, name, content, type, status) VALUES
+('SCENE_ANALYZE', '场景图片分析提示词', '你是一个餐厅场景分析助手。请根据上传的图片分析用餐环境，不要识别人脸、不要判断身份、不要输出任何与个人身份相关的信息。\n\n请分析：\n1. 桌型（小桌/大桌/圆桌/包间）\n2. 用餐时段推断（早餐/午餐/晚餐/夜宵）\n3. 环境氛围（休闲/正式/商务/家庭）\n4. 可能的用餐人数估计\n5. 桌面上可见的已有菜品类型或饮品（如有）\n\n请严格按照 JSON 格式输出：\n{\n  "tableType": "小桌",\n  "mealTime": "午餐",\n  "atmosphere": "休闲",\n  "estimatedPeopleCount": 2,\n  "hints": ["桌上有咖啡", "灯光偏暖"]\n}', 'vision', 1);
+
+-- 话术生成提示词
+INSERT INTO prompt_template (code, name, content, type, status) VALUES
+('GENERATE_WAITER_SCRIPT', '服务员话术生成提示词', '你是一位经验丰富的餐厅服务员培训师。根据以下顾客画像和推荐菜品，为服务员生成自然的推荐话术。\n\n话术要求：\n1. 自然口语化，像真人服务员说话的风格\n2. 每道菜2-3句话，包含菜品亮点和推荐理由\n3. 结合顾客画像做针对性推荐（人数、场景、口味偏好）\n4. 给出一段整体开场白，服务员可以直接对顾客说\n5. 话术要亲和自然，不要像机器人\n\n用户画像：\n{{userProfile}}\n\n推荐菜品：\n{{recommendedDishes}}\n\n请输出 JSON：\n{\n  "openingScript": "整体开场话术（服务员对顾客说的第一段话）",\n  "dishScripts": [\n    {\n      "dishId": 1,\n      "dishName": "菜品名",\n      "script": "针对这道菜的推荐话术"\n    }\n  ]\n}', 'script', 1);
+
+-- 初始管理员账号 (密码: admin123)
+INSERT INTO sys_user (username, password, real_name, role, status) VALUES
+('admin', '$2b$12$wDSW/pImkA5E/icwDefrQux0jZ0IGi4Bki4zcfO4hvC/w6B3Vz.Me', '系统管理员', 'OWNER', 1);
