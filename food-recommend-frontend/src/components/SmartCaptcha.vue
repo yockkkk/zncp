@@ -30,22 +30,19 @@
       </div>
     </div>
 
-    <!-- 模式 2: 点击选中指定文字 -->
+    <!-- 模式 2: 选出不同类的一项 -->
     <div v-else-if="mode === 'clickText' && !passed" class="captcha-click">
       <div class="click-prompt">
-        👆 在下方文字中，按顺序点击所有 <b class="target-highlight">{{ clickTarget }}</b>
-        <span class="click-hint">（共 {{ clickTargetCount }} 个）</span>
+        👆 <b>选出不同类的一项</b>
       </div>
-      <div class="click-grid">
-        <span v-for="(item, i) in clickItems" :key="i"
-          class="click-char"
-          :class="{ selected: item.selected, wrong: clickWrongIdx === i }"
-          @click="onClickChar(i)">
-          {{ item.char }}
-        </span>
-      </div>
-      <div class="click-progress">
-        已找到 {{ selectedCount }} / {{ clickTargetCount }}
+      <div class="click-grid-4">
+        <div v-for="(item, i) in oddOneItems" :key="i"
+          class="odd-card"
+          :class="{ right: i === oddOneCorrect && answered, wrong: i === oddOneWrong }"
+          @click="checkOddOne(i)">
+          <span class="odd-emoji">{{ item.emoji }}</span>
+          <span class="odd-label">{{ item.label }}</span>
+        </div>
       </div>
     </div>
 
@@ -98,13 +95,11 @@ const mathAnswer = ref(0)
 const mathOptions = ref([])
 const wrongAnswer = ref(null)
 
-// 点击文字验证（修复：使用对象数组保持索引一致性）
-const clickTarget = ref('')
-const clickTargetCount = ref(0)
-const clickItems = ref([])
-const clickWrongIdx = ref(null)
-const selectedCount = ref(0)
-let clickOrder = []  // 正确的点击顺序（字符值）
+// 选出不同类验证
+const oddOneItems = ref([])
+const oddOneCorrect = ref(-1)
+const oddOneWrong = ref(-1)
+const answered = ref(false)
 
 // 方向验证
 const dirQuestion = ref('')
@@ -206,53 +201,49 @@ function checkMathAnswer(val) {
   }
 }
 
-// ===== 点击文字（修复：短字符串+多出现+清晰提示）=====
-const textTargets = [
-  { label: '智', chars: '智慧智能智造智力智联' },
-  { label: '推', chars: '推进推动推理推演推手' },
-  { label: '餐', chars: '餐饮早餐午餐晚餐餐桌' },
-  { label: '系', chars: '系统系列联系体系系数' }
+// ===== 选出不同类 =====
+const oddOneSets = [
+  { items: [
+    { emoji: '🐱', label: '猫' }, { emoji: '🐶', label: '狗' },
+    { emoji: '🐰', label: '兔' }, { emoji: '🌲', label: '树' }
+  ], answer: 3 },
+  { items: [
+    { emoji: '🍎', label: '苹果' }, { emoji: '🍌', label: '香蕉' },
+    { emoji: '🍇', label: '葡萄' }, { emoji: '🥩', label: '牛肉' }
+  ], answer: 3 },
+  { items: [
+    { emoji: '🚗', label: '汽车' }, { emoji: '🚌', label: '公交' },
+    { emoji: '🚲', label: '单车' }, { emoji: '🛳️', label: '轮船' }
+  ], answer: 3 },
+  { items: [
+    { emoji: '📱', label: '手机' }, { emoji: '💻', label: '电脑' },
+    { emoji: '⌚', label: '手表' }, { emoji: '📖', label: '书本' }
+  ], answer: 3 }
 ]
 function initClickText() {
-  clickSelected.value = []
-  clickWrongIdx.value = null
-  selectedCount.value = 0
-  const t = textTargets[Math.floor(Math.random() * textTargets.length)]
-  clickTarget.value = t.label
-  const chars = t.chars.split('')
-  clickTargetCount.value = chars.filter(c => c === t.label).length
-  // 构建带位置信息的对象数组，随机排列
-  clickItems.value = chars
-    .map((char, idx) => ({ char, originalIdx: idx, selected: false }))
-    .sort(() => Math.random() - 0.5)
-  // 正确的点击顺序：按 originalIdx 升序点击所有目标字符
-  clickOrder = chars
-    .map((c, i) => c === t.label ? i : -1)
-    .filter(i => i >= 0)
+  oddOneWrong.value = -1
+  answered.value = false
+  oddOneCorrect.value = -1
+  const set = oddOneSets[Math.floor(Math.random() * oddOneSets.length)]
+  oddOneItems.value = [...set.items].sort(() => Math.random() - 0.5)
+  oddOneCorrect.value = oddOneItems.value.findIndex(
+    item => item.label === set.items[set.answer].label
+  )
 }
-function onClickChar(displayIdx) {
-  if (passed.value) return
-  const item = clickItems.value[displayIdx]
-  if (item.selected) return  // 已选过的跳过
-
-  // 检查这个位置的字符是否是下一个应该点的
-  const nextOriginalIdx = clickOrder[selectedCount.value]
-  if (item.originalIdx === nextOriginalIdx) {
-    item.selected = true
-    selectedCount.value++
-    if (selectedCount.value >= clickTargetCount.value) {
-      onPass()
-    }
+function checkOddOne(i) {
+  if (passed.value || answered.value) return
+  answered.value = true
+  if (i === oddOneCorrect.value) {
+    onPass()
   } else {
-    clickWrongIdx.value = displayIdx
+    oddOneWrong.value = i
     failCount.value++
     emit('verify', false)
     setTimeout(() => {
-      clickWrongIdx.value = null
-      // 重置选中状态
-      clickItems.value.forEach(it => it.selected = false)
-      selectedCount.value = 0
-    }, 600)
+      oddOneWrong.value = -1
+      answered.value = false
+      refreshCaptcha()
+    }, 800)
   }
 }
 
@@ -302,9 +293,8 @@ function reset() {
   passed.value = false
   failCount.value = 0
   sliderLeft.value = 0
-  clickItems.value.forEach(it => it.selected = false)
-  selectedCount.value = 0
-  clickWrongIdx.value = null
+  oddOneWrong.value = -1
+  answered.value = false
   pickMode()
 }
 
@@ -357,22 +347,18 @@ defineExpose({ reset })
 .math-opt:hover { border-color: #409eff; background: #ecf5ff; }
 .math-opt.wrong { border-color: #f56c6c; background: #fef0f0; color: #f56c6c; animation: shake 0.4s; }
 
-/* === 点击文字 === */
-.click-prompt { font-size: 13px; color: #606266; margin-bottom: 10px; line-height: 1.8; }
-.target-highlight {
-  color: #e6a23c; background: #fdf6ec; padding: 2px 6px; border-radius: 4px;
-  font-size: 16px;
+/* === 选出不同类 === */
+.click-prompt { font-size: 14px; color: #303133; margin-bottom: 12px; text-align: center; }
+.click-grid-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.odd-card {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 14px 8px; border: 2px solid #dcdfe6; border-radius: 10px; cursor: pointer; transition: all 0.2s;
 }
-.click-hint { font-size: 12px; color: #909399; }
-.click-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; justify-content: center; }
-.click-char {
-  width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
-  border: 2px solid #dcdfe6; border-radius: 6px; cursor: pointer; font-size: 16px; transition: all 0.2s;
-}
-.click-char:hover { border-color: #409eff; background: #ecf5ff; }
-.click-char.selected { border-color: #67c23a; background: #f0f9eb; color: #67c23a; font-weight: 700; }
-.click-char.wrong { border-color: #f56c6c; background: #fef0f0; color: #f56c6c; animation: shake 0.4s; }
-.click-progress { font-size: 12px; color: #909399; }
+.odd-card:hover { border-color: #409eff; background: #ecf5ff; transform: translateY(-1px); }
+.odd-card.right { border-color: #67c23a; background: #f0f9eb; }
+.odd-card.wrong { border-color: #f56c6c; background: #fef0f0; animation: shake 0.4s; }
+.odd-emoji { font-size: 36px; }
+.odd-label { font-size: 13px; color: #606266; font-weight: 500; }
 
 /* === 方向判断 === */
 .dir-prompt { font-size: 13px; color: #606266; margin-bottom: 10px; }
