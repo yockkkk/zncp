@@ -7,5 +7,9 @@ import com.example.foodrecommend.entity.Dish;
 import java.util.List;
 
 public interface AiRerankService {
-    RerankResultDTO rerank(UserProfileDTO profile, List<Dish> candidateDishes);
+    RerankResultDTO rerank(UserProfileDTO profile, List<Dish> candidateDishes, String remark);
+
+    default RerankResultDTO rerank(UserProfileDTO profile, List<Dish> candidateDishes) {
+        return rerank(profile, candidateDishes, null);
+    }
 }
