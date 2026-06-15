@@ -1,6 +1,5 @@
 package com.example.foodrecommend.service;
 
-import com.example.foodrecommend.dto.DishScriptDTO;
 import com.example.foodrecommend.dto.RecommendDishDTO;
 import com.example.foodrecommend.dto.ScriptResultDTO;
 import com.example.foodrecommend.dto.UserProfileDTO;
