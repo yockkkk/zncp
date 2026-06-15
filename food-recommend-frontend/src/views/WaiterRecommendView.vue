@@ -31,7 +31,11 @@
 
         <!-- 加载中 -->
         <div v-if="loading" class="loading-box">
-          <el-skeleton :rows="8" animated />
+          <div class="loading-spin">
+            <el-icon :size="40" class="spin-icon"><Loading /></el-icon>
+            <p class="loading-text">AI 正在分析推荐中...</p>
+            <p class="loading-sub">多模型协同工作，预计需要10-30秒</p>
+          </div>
         </div>
 
         <!-- 结果 -->
@@ -92,6 +96,9 @@
                   <el-tag type="warning" size="small">¥{{ dish.price }}</el-tag>
                   <el-tag size="small">{{ dish.calories }}kcal</el-tag>
                   <el-tag type="success" size="small">蛋白{{ dish.protein }}g</el-tag>
+                  <el-tag v-if="dish.suitableFor && dish.suitableFor.length" type="danger" size="small" effect="dark">
+                    适合: {{ dish.suitableFor.join('、') }}
+                  </el-tag>
                 </div>
                 <div class="dish-reasons">
                   <p><b>推荐理由：</b>{{ dish.reason }}</p>
@@ -122,7 +129,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Camera, MagicStick } from '@element-plus/icons-vue'
+import { Camera, MagicStick, Loading } from '@element-plus/icons-vue'
 import TagPanel from '../components/TagPanel.vue'
 import api from '../api'
 
@@ -231,7 +238,12 @@ async function adoptDish(dishId) {
 .recommend-btn { width: 100%; height: 48px; font-size: 16px; margin-top: 8px; }
 
 .right-panel { min-height: 400px; }
-.loading-box { padding: 24px; background: #fff; border-radius: 8px; }
+.loading-box { padding: 48px 24px; background: #fff; border-radius: 8px; text-align: center; }
+.loading-spin { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.loading-text { font-size: 15px; color: #303133; margin: 0; font-weight: 500; }
+.loading-sub { font-size: 12px; color: #909399; margin: 0; }
+.spin-icon { animation: spin 1.2s linear infinite; color: #409eff; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .steps { margin-bottom: 24px; background: #fff; padding: 20px; border-radius: 8px; }
 .section-card { margin-bottom: 16px; }
 

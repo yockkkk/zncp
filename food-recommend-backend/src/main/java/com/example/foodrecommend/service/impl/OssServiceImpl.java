@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.UUID;
 
 @Slf4j
@@ -78,12 +79,12 @@ public class OssServiceImpl implements OssService {
     }
 
     private String uploadToOss(MultipartFile file, String fileName) {
-        try {
+        try (InputStream is = file.getInputStream()) {
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setObjectAcl(CannedAccessControlList.PublicRead);
 
             PutObjectRequest putRequest = new PutObjectRequest(
-                    ossConfig.getBucketName(), fileName, file.getInputStream(), metadata);
+                    ossConfig.getBucketName(), fileName, is, metadata);
 
             ossClient.putObject(putRequest);
             String url = "https://" + ossConfig.getBucketName() + "." + ossConfig.getEndpoint() + "/" + fileName;
@@ -96,8 +97,8 @@ public class OssServiceImpl implements OssService {
 
     private String uploadToLocal(MultipartFile file, String fileName) {
         File dir = new File(localPath);
-        if (!dir.exists()) {
-            dir.mkdirs();
+        if (!dir.exists() && !dir.mkdirs()) {
+            throw new BusinessException("本地存储目录创建失败");
         }
         try {
             File dest = new File(dir, fileName.substring(fileName.lastIndexOf("/") + 1));

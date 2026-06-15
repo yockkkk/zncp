@@ -1,6 +1,13 @@
 CREATE DATABASE IF NOT EXISTS food_recommend DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE food_recommend;
 
+DROP TABLE IF EXISTS recommendation_feedback;
+DROP TABLE IF EXISTS customer_profile;
+DROP TABLE IF EXISTS prompt_template;
+DROP TABLE IF EXISTS recommendation_record;
+DROP TABLE IF EXISTS sys_user;
+DROP TABLE IF EXISTS dish;
+
 CREATE TABLE IF NOT EXISTS dish (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '菜品ID',
     name VARCHAR(100) NOT NULL COMMENT '菜品名称',
@@ -20,6 +27,7 @@ CREATE TABLE IF NOT EXISTS dish (
     stock INT DEFAULT 999 COMMENT '库存',
     status TINYINT DEFAULT 1 COMMENT '状态：1上架，0下架',
     vector_status TINYINT DEFAULT 0 COMMENT '向量状态：0未生成，1已生成',
+    gross_margin DECIMAL(5,2) DEFAULT 0.60 COMMENT '毛利率',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) COMMENT='菜品表';

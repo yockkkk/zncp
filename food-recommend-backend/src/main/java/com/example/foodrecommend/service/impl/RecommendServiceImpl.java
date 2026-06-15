@@ -4,7 +4,6 @@ import com.example.foodrecommend.common.BusinessException;
 import com.example.foodrecommend.dto.*;
 import com.example.foodrecommend.entity.Dish;
 import com.example.foodrecommend.entity.RecommendationRecord;
-import com.example.foodrecommend.mapper.DishMapper;
 import com.example.foodrecommend.mapper.RecommendationRecordMapper;
 import com.example.foodrecommend.service.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,7 +26,6 @@ public class RecommendServiceImpl implements RecommendService {
     private final VectorSearchService vectorSearchService;
     private final AiRerankService aiRerankService;
     private final DishService dishService;
-    private final DishMapper dishMapper;
     private final RecommendationRecordMapper recordMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -176,6 +174,7 @@ public class RecommendServiceImpl implements RecommendService {
         payload.setTags(splitToList(dish.getTags()));
         payload.setSuitablePeople(splitToList(dish.getSuitablePeople()));
         payload.setScene(splitToList(dish.getScene()));
+        payload.setGrossMargin(dish.getGrossMargin() != null ? dish.getGrossMargin().doubleValue() : 0.60);
 
         vectorSearchService.upsertDishVector(dish.getId(), vector, payload);
     }

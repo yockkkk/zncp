@@ -26,7 +26,7 @@
             @dragover.prevent="isDragging = true"
             @dragleave="isDragging = false"
             @drop.prevent="onDrop"
-            @click="!store.previewUrl && $refs.fileInput.click()"
+            @click="!store.previewUrl && fileInput.click()"
           >
             <input ref="fileInput" type="file" accept="image/*" style="display:none" @change="onFilePicked" />
             <div v-if="!store.previewUrl" class="drop-placeholder">
@@ -39,7 +39,7 @@
             <template v-else>
               <img :src="store.previewUrl" class="preview-img" />
               <div class="preview-actions">
-                <el-button size="small" round @click.stop="$refs.fileInput.click()">
+                <el-button size="small" round @click.stop="fileInput.click()">
                   <el-icon><Edit /></el-icon> 更换图片
                 </el-button>
                 <el-button size="small" round type="danger" @click.stop="resetAll">
@@ -233,11 +233,12 @@
 
 <script setup>
 import { ref, computed, onBeforeUnmount } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import {
   Camera, MagicStick, UploadFilled, Edit, Delete, Star, StarFilled,
   User, Food, CircleCheck, CirclePlus, Loading, ChatLineRound, CloseBold
 } from '@element-plus/icons-vue'
+import axios from 'axios'
 import api from '../api'
 import { useRecommendStore } from '../stores/recommend'
 
@@ -249,7 +250,6 @@ const isDragging = ref(false)
 let abortController = null
 
 // 所有响应式状态全部来自 store，离开页面不丢失
-const { file, previewUrl, result, loading, remark, finalRemark, selectedTags, currentStep } = store
 
 let stepTimer = null
 
@@ -368,7 +368,7 @@ async function startRecommend() {
     store.currentStep = loadingSteps.length
     ElMessage.success('推荐完成！')
   } catch (e) {
-    if (api.isCancel && api.isCancel(e)) return
+    if (axios.isCancel(e)) return
     if (e.code === 'ERR_CANCELED' || e.name === 'CanceledError') return
     ElMessage.error(e.message || '推荐失败，请重试')
   } finally {

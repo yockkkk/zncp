@@ -16,4 +16,11 @@ public class UserProfileDTO {
     private List<String> possiblePreferences;
     private String healthGoal;
     private List<String> recommendationKeywords;
+
+    // 多人模式特有字段
+    private List<GuestProfile> guests;
+    private List<String> consolidatedAvoids;             // 合并后的忌口清单
+    private List<String> consolidatedAllergens;          // 合并后的过敏源清单
+    private List<String> consolidatedDiseases;           // 合并后的疾病清单
+    private List<String> consolidatedDietLifestyles;     // 合并后的饮食习惯/宗教清单
 }

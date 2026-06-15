@@ -15,9 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -40,8 +37,7 @@ public class OwnerAnalyticsController {
      */
     @GetMapping("/analytics/overview")
     public Result<AnalyticsDTO> getOverview() {
-        List<RecommendationRecord> allRecords = recordMapper.selectList(
-                new LambdaQueryWrapper<>());
+        List<RecommendationRecord> allRecords = recordMapper.selectList(null);
         long totalRecs = allRecords.size();
         long adoptedCount = allRecords.stream()
                 .filter(r -> r.getAdopted() != null && r.getAdopted() == 1)

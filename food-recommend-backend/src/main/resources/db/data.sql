@@ -92,6 +92,7 @@ INSERT INTO prompt_template (code, name, content, type, status) VALUES
 INSERT INTO prompt_template (code, name, content, type, status) VALUES
 ('GENERATE_WAITER_SCRIPT', '服务员话术生成提示词', '你是一位经验丰富的餐厅服务员培训师。根据以下顾客画像和推荐菜品，为服务员生成自然的推荐话术。\n\n话术要求：\n1. 自然口语化，像真人服务员说话的风格\n2. 每道菜2-3句话，包含菜品亮点和推荐理由\n3. 结合顾客画像做针对性推荐（人数、场景、口味偏好）\n4. 给出一段整体开场白，服务员可以直接对顾客说\n5. 话术要亲和自然，不要像机器人\n\n用户画像：\n{{userProfile}}\n\n推荐菜品：\n{{recommendedDishes}}\n\n请输出 JSON：\n{\n  "openingScript": "整体开场话术（服务员对顾客说的第一段话）",\n  "dishScripts": [\n    {\n      "dishId": 1,\n      "dishName": "菜品名",\n      "script": "针对这道菜的推荐话术"\n    }\n  ]\n}', 'script', 1);
 
--- 初始管理员账号 (密码: admin123)
+-- 初始管理员账号(密码: admin123)
 INSERT INTO sys_user (username, password, real_name, role, status) VALUES
-('admin', '$2b$12$wDSW/pImkA5E/icwDefrQux0jZ0IGi4Bki4zcfO4hvC/w6B3Vz.Me', '系统管理员', 'OWNER', 1);
+('admin', '$2b$12$wDSW/pImkA5E/icwDefrQux0jZ0IGi4Bki4zcfO4hvC/w6B3Vz.Me', '系统管理员', 'OWNER', 1),
+('waiter', '$2b$12$wDSW/pImkA5E/icwDefrQux0jZ0IGi4Bki4zcfO4hvC/w6B3Vz.Me', '服务员阿强', 'WAITER', 1);

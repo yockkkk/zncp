@@ -33,16 +33,33 @@ public class AiRerankServiceImpl implements AiRerankService {
     private volatile String cachedRerankPrompt;
 
     private static final String DEFAULT_RERANK_PROMPT =
-        "你是一个智能餐饮推荐专家。根据用户画像对候选菜品重排序。规则：\\n"
-        + "1. 只从候选菜品选择，不编造\\n"
-        + "2. 综合考虑营养、性价比、人数、场景、口味\\n"
-        + "3. 减脂偏好优先低脂高蛋白低热量\\n"
-        + "4. 多人用餐优先适合分享的套餐\\n"
-        + "5. 尽可能多样化推荐，避免每次都相同组合\\n"
-        + "6. 输出JSON\\n\\n用户画像：\\n{{userProfile}}\\n\\n候选菜品：\\n{{candidateDishes}}\\n\\n"
-        + "输出：{\"summary\":\"整体推荐说明\",\"recommendations\":[{\"dishId\":1,\"name\":\"菜品名\","
-        + "\"rank\":1,\"score\":95,\"reason\":\"推荐理由\",\"nutritionComment\":\"营养评价\","
-        + "\"costPerformanceComment\":\"性价比评价\"}]}";
+        "你是一个智能餐饮推荐专家。根据用餐画像（可能是多位顾客的组合）对候选菜品重排序并组合配菜。\\n"
+        + "规则：\\n"
+        + "1. 只能从候选菜品中选择，不允许编造数据库中不存在的菜品。\\n"
+        + "2. 推荐的菜品应形成一个平衡的组合，总数量应大致匹配用餐人数（如：1人点1-2道，2人点2-3道，3-4人点4-5道，5人以上点6-8道）。\\n"
+        + "3. 必须绝对遵守每一位顾客的避忌限制（忌口/不吃、过敏源、疾病禁忌、习惯等）。如果某道菜包含某位顾客避忌的成分，决不能推荐给该顾客（在 suitableFor 中剔除该顾客）；如果某道菜对整桌人都存在严重过敏隐患，应剔除该菜。\\n"
+        + "4. 匹配每位顾客的口味偏好（如：爱吃酸、爱吃麻、不爱甜、喜欢嫩、要下饭、要清淡等）。\\n"
+        + "5. 悄悄优先推荐高毛利率菜品（grossMargin较高的菜品，例如饮品、甜点或特色高毛利菜，通常 >= 0.70），但确保整体荤素与口味搭配合理，不着痕迹，不让顾客反感。\\n"
+        + "6. 对于每一道推荐的菜品，必须输出 suitableFor 字段，填入适合享用该菜品的顾客姓名列表（例如：[\"顾客A\", \"顾客C\"]），若都适合则填入所有顾客姓名或[\"全体顾客\"]。\\n"
+        + "7. 输出必须是 JSON 格式。\\n\\n"
+        + "用户画像：\\n{{userProfile}}\\n\\n"
+        + "候选菜品（含毛利率 grossMargin）：\\n{{candidateDishes}}\\n\\n"
+        + "输出格式为：\\n"
+        + "{\\n"
+        + "  \\\"summary\\\": \\\"整体平衡配菜说明（解释这桌配菜如何照顾到各人偏好并避开忌口，荤素搭配的合理性等）\\\",\\n"
+        + "  \\\"recommendations\\\": [\\n"
+        + "    {\\n"
+        + "      \\\"dishId\\\": 1,\\n"
+        + "      \\\"name\\\": \\\"菜品名称\\\",\\n"
+        + "      \\\"rank\\\": 1,\\n"
+        + "      \\\"score\\\": 95,\\n"
+        + "      \\\"suitableFor\\\": [\\\"顾客A\\\", \\\"顾客C\\\"],\\n"
+        + "      \\\"reason\\\": \\\"推荐理由（说明为什么推荐以及为什么适合这几位顾客）\\\",\\n"
+        + "      \\\"nutritionComment\\\": \\\"营养评价\\\",\\n"
+        + "      \\\"costPerformanceComment\\\": \\\"性价比评价\\\"\\n"
+        + "    }\\n"
+        + "  ]\\n"
+        + "}";
 
     private String getRerankPrompt() {
         if (cachedRerankPrompt != null) return cachedRerankPrompt;
@@ -52,6 +69,12 @@ public class AiRerankServiceImpl implements AiRerankService {
                             .eq(PromptTemplate::getCode, "RERANK_DISH_RECOMMEND")
                             .eq(PromptTemplate::getStatus, 1));
             if (t != null && t.getContent() != null && !t.getContent().isEmpty()) {
+                // 自愈检查：如果数据库里的提示词是旧版的（不包含 suitableFor），就更新它
+                if (!t.getContent().contains("suitableFor")) {
+                    t.setContent(DEFAULT_RERANK_PROMPT);
+                    promptTemplateMapper.updateById(t);
+                    log.info("检测到旧版重排序提示词，已自动更新为新版");
+                }
                 cachedRerankPrompt = t.getContent();
                 log.info("重排序提示词已从数据库加载");
                 return cachedRerankPrompt;
@@ -81,6 +104,7 @@ public class AiRerankServiceImpl implements AiRerankService {
                 dishMap.put("calories", dish.getCalories());
                 dishMap.put("protein", dish.getProtein());
                 dishMap.put("taste", dish.getTaste());
+                dishMap.put("grossMargin", dish.getGrossMargin() != null ? dish.getGrossMargin().doubleValue() : 0.60);
                 dishList.add(dishMap);
             }
             String candidateDishesStr = objectMapper.writeValueAsString(dishList);
@@ -116,6 +140,7 @@ public class AiRerankServiceImpl implements AiRerankService {
                 log.info("重排序模型返回长度: {}", responseBody.length());
                 JsonNode root = objectMapper.readTree(responseBody);
                 String content = root.path("choices").get(0).path("message").path("content").asText();
+                log.info("Rerank LLM raw content: {}", content);
 
                 if ((content == null || content.isEmpty()) && !root.path("choices").get(0).path("message").path("reasoning_content").isMissingNode()) {
                     content = root.path("choices").get(0).path("message").path("reasoning_content").asText();
@@ -129,6 +154,7 @@ public class AiRerankServiceImpl implements AiRerankService {
                 }
 
                 String jsonStr = extractJson(content);
+                log.info("Extracted jsonStr to parse: {}", jsonStr);
                 JsonNode resultNode = objectMapper.readTree(jsonStr);
 
                 String summary = resultNode.path("summary").asText("");

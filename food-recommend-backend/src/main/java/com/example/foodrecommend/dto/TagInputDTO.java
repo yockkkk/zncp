@@ -26,4 +26,7 @@ public class TagInputDTO {
 
     /** 用餐时段：早餐, 午餐, 晚餐, 夜宵 */
     private String mealTime;
+
+    /** 多人桌详细顾客画像列表 */
+    private List<GuestProfile> guests;
 }

@@ -16,4 +16,5 @@ public class DishVectorDTO {
     private List<String> tags;
     private List<String> suitablePeople;
     private List<String> scene;
+    private double grossMargin;
 }
