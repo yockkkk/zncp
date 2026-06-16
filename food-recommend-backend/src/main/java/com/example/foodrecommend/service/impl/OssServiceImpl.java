@@ -18,11 +18,18 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
 @Service
 public class OssServiceImpl implements OssService {
+
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
+            "jpg", "jpeg", "png", "gif", "webp", "bmp",  // 图片
+            "mp4", "avi", "mov", "webm",                   // 视频
+            "pdf", "doc", "docx", "xls", "xlsx"            // 文档
+    );
 
     private final OssConfig ossConfig;
     private OSS ossClient;
@@ -68,8 +75,12 @@ public class OssServiceImpl implements OssService {
         String originalFilename = file.getOriginalFilename();
         String ext = "";
         if (originalFilename != null && originalFilename.contains(".")) {
-            ext = originalFilename.substring(originalFilename.lastIndexOf("."));
+            ext = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase();
         }
+        if (!ext.isEmpty() && !ALLOWED_EXTENSIONS.contains(ext)) {
+            throw new BusinessException("不支持的文件类型: ." + ext + "，允许类型: " + ALLOWED_EXTENSIONS);
+        }
+        ext = ext.isEmpty() ? "" : "." + ext;
         String fileName = "recommend/" + UUID.randomUUID().toString().replace("-", "") + ext;
 
         if (ossConfig.isEnabled() && ossClient != null) {

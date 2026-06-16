@@ -6,6 +6,7 @@ import com.example.foodrecommend.entity.RecommendationRecord;
 import com.example.foodrecommend.mapper.RecommendationRecordMapper;
 import com.example.foodrecommend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,6 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('WAITER', 'OWNER')")
 public class RecommendController {
 
     private final RecommendService recommendService;

@@ -54,11 +54,12 @@ public class DishMatchingServiceImpl implements DishMatchingService {
     }
 
     /**
-     * 规则过滤：上架状态 → 库存 → 价格匹配 → 安全特征检测 → 销量排序 → Top 20
+     * 规则过滤：上架状态 → 向量已生成 → 库存 → 价格匹配 → 安全特征检测 → 销量排序 → Top 20
      */
     private List<Dish> ruleFilter(List<Dish> dishes, UserProfileDTO profile) {
         return dishes.stream()
                 .filter(dish -> dish.getStatus() != null && dish.getStatus() == 1)
+                .filter(dish -> dish.getVectorStatus() != null && dish.getVectorStatus() == 1)
                 .filter(dish -> dish.getStock() != null && dish.getStock() > 0)
                 .filter(dish -> priceMatch(dish, profile))
                 .filter(dish -> isSafeForAtLeastOne(dish, profile))
@@ -137,8 +138,11 @@ public class DishMatchingServiceImpl implements DishMatchingService {
                 if (allergen == null || allergen.trim().isEmpty()) continue;
                 String val = allergen.toLowerCase().trim();
                 if (val.contains("海鲜")) {
-                    if (dishText.contains("海鲜") || dishText.contains("鱼") || dishText.contains("虾") || dishText.contains("蟹") || dishText.contains("贝") || dishText.contains("蚝") || dishText.contains("鲍")) {
-                        return false;
+                    // P3-20: 排除名称含"鱼"但实际不含海鲜的菜品（如鱼香茄子、鱼香肉丝）
+                    if (!dishName.contains("鱼香")) {
+                        if (dishText.contains("海鲜") || dishText.contains("鱼") || dishText.contains("虾") || dishText.contains("蟹") || dishText.contains("贝") || dishText.contains("蚝") || dishText.contains("鲍")) {
+                            return false;
+                        }
                     }
                 } else if (val.contains("花生")) {
                     if (dishText.contains("花生") || dishText.contains("花生酱") || dishText.contains("坚果")) {
@@ -199,14 +203,30 @@ public class DishMatchingServiceImpl implements DishMatchingService {
         int peopleCount = (profile.getPeopleCount() != null && profile.getPeopleCount() > 0) ? profile.getPeopleCount() : 1;
         BigDecimal perPersonPrice = price;
 
-        // 如果是多人套餐，按人均折算价格进行预算过滤
-        if ("多人套餐".equals(dish.getCategory()) || 
-            (dish.getName() != null && (dish.getName().contains("套餐") || dish.getName().contains("双人") || dish.getName().contains("人")))) {
-            perPersonPrice = price.divide(BigDecimal.valueOf(peopleCount), 2, java.math.RoundingMode.HALF_UP);
+        // 套餐按实际所需份数折算人均价格：套餐容量 / 人数 → 所需份数，再计算人均
+        int servingSize = guessServingSize(dish);
+        if (servingSize > 1) {
+            int packagesNeeded = (int) Math.ceil((double) peopleCount / servingSize);
+            BigDecimal totalCost = price.multiply(BigDecimal.valueOf(packagesNeeded));
+            perPersonPrice = totalCost.divide(BigDecimal.valueOf(peopleCount), 2, java.math.RoundingMode.HALF_UP);
         }
 
         if ("低".equals(level)) return perPersonPrice.compareTo(new BigDecimal("30")) <= 0;
         if ("中等".equals(level)) return perPersonPrice.compareTo(new BigDecimal("80")) <= 0;
         return true;
+    }
+
+    /** 猜测套餐适合人数 */
+    private int guessServingSize(Dish dish) {
+        String name = dish.getName() != null ? dish.getName() : "";
+        if (name.contains("单人") || name.contains("一人")) return 1;
+        if (name.contains("双人") || name.contains("情侣") || name.contains("二人") || name.contains("两人")) return 2;
+        if (name.contains("三人") || name.contains("三口")) return 3;
+        if (name.contains("四人") || name.contains("四人")) return 4;
+        if (name.contains("六人")) return 6;
+        if (name.contains("八人")) return 8;
+        if ("多人套餐".equals(dish.getCategory())) return 2; // 默认双人起
+        if (name.contains("套餐")) return 2;
+        return 1;
     }
 }

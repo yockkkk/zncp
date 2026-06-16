@@ -6,6 +6,7 @@ import com.example.foodrecommend.dto.LoginResultDTO;
 import com.example.foodrecommend.entity.User;
 import com.example.foodrecommend.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -30,8 +31,9 @@ public class AuthController {
     }
 
     /**
-     * 老板创建服务员账号
+     * 老板创建服务员账号（仅OWNER可注册）
      */
+    @PreAuthorize("hasRole('OWNER')")
     @PostMapping("/register")
     public Result<User> register(@RequestBody Map<String, String> body) {
         User user = userService.createWaiter(

@@ -5,14 +5,17 @@ import com.example.foodrecommend.common.BusinessException;
 import com.example.foodrecommend.common.Result;
 import com.example.foodrecommend.dto.AnalyticsDTO;
 import com.example.foodrecommend.entity.Dish;
+import com.example.foodrecommend.entity.RecommendationFeedback;
 import com.example.foodrecommend.entity.RecommendationRecord;
 import com.example.foodrecommend.entity.User;
 import com.example.foodrecommend.mapper.DishMapper;
+import com.example.foodrecommend.mapper.RecommendationFeedbackMapper;
 import com.example.foodrecommend.mapper.RecommendationRecordMapper;
 import com.example.foodrecommend.mapper.UserMapper;
 import com.example.foodrecommend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -28,6 +31,7 @@ import java.util.stream.Collectors;
 public class OwnerAnalyticsController {
 
     private final RecommendationRecordMapper recordMapper;
+    private final RecommendationFeedbackMapper feedbackMapper;
     private final DishMapper dishMapper;
     private final UserMapper userMapper;
     private final UserService userService;
@@ -35,9 +39,14 @@ public class OwnerAnalyticsController {
     /**
      * 数据概览
      */
+    @Transactional(readOnly = true)
     @GetMapping("/analytics/overview")
     public Result<AnalyticsDTO> getOverview() {
-        List<RecommendationRecord> allRecords = recordMapper.selectList(null);
+        List<RecommendationRecord> allRecords = recordMapper.selectList(
+                new LambdaQueryWrapper<RecommendationRecord>()
+                        .orderByDesc(RecommendationRecord::getCreateTime)
+                        .last("LIMIT 10000")
+        );
         long totalRecs = allRecords.size();
         long adoptedCount = allRecords.stream()
                 .filter(r -> r.getAdopted() != null && r.getAdopted() == 1)
@@ -68,7 +77,7 @@ public class OwnerAnalyticsController {
     }
 
     /**
-     * 全部推荐记录
+     * 全部推荐记录（附带反馈明细）
      */
     @GetMapping("/records")
     public Result<List<RecommendationRecord>> listAllRecords(
@@ -87,7 +96,25 @@ public class OwnerAnalyticsController {
         }
         wrapper.last("LIMIT 200");
 
-        return Result.success(recordMapper.selectList(wrapper));
+        List<RecommendationRecord> records = recordMapper.selectList(wrapper);
+
+        // 批量加载反馈明细（与服务端逻辑一致）
+        if (!records.isEmpty()) {
+            List<Long> recordIds = records.stream().map(RecommendationRecord::getId).toList();
+            List<RecommendationFeedback> allFeedbacks = feedbackMapper.selectList(
+                    new LambdaQueryWrapper<RecommendationFeedback>()
+                            .in(RecommendationFeedback::getRecordId, recordIds)
+            );
+            java.util.Map<Long, List<RecommendationFeedback>> feedbackMap = new java.util.HashMap<>();
+            for (RecommendationFeedback fb : allFeedbacks) {
+                feedbackMap.computeIfAbsent(fb.getRecordId(), k -> new java.util.ArrayList<>()).add(fb);
+            }
+            for (RecommendationRecord r : records) {
+                r.setFeedbacks(feedbackMap.getOrDefault(r.getId(), java.util.Collections.emptyList()));
+            }
+        }
+
+        return Result.success(records);
     }
 
     /**
@@ -134,20 +161,34 @@ public class OwnerAnalyticsController {
     // ========== 私有统计方法 ==========
 
     private List<AnalyticsDTO.DishStat> computeTopDishes(List<RecommendationRecord> records) {
-        Map<Long, long[]> dishStats = new HashMap<>(); // dishId -> [total, adopted]
+        Map<Long, long[]> dishStats = new HashMap<>(); // dishId -> [recommendCount, adoptedCount]
+
+        // 先加载所有采纳反馈，构建 recordId → Set<adoptedDishId>
+        Map<Long, Set<Long>> adoptedMap = new HashMap<>();
+        if (!records.isEmpty()) {
+            List<Long> recordIds = records.stream().map(RecommendationRecord::getId).collect(Collectors.toList());
+            List<RecommendationFeedback> feedbacks = feedbackMapper.selectList(
+                    new LambdaQueryWrapper<RecommendationFeedback>()
+                            .in(RecommendationFeedback::getRecordId, recordIds)
+                            .isNotNull(RecommendationFeedback::getAdoptedDishId)
+            );
+            for (RecommendationFeedback fb : feedbacks) {
+                adoptedMap.computeIfAbsent(fb.getRecordId(), k -> new HashSet<>())
+                        .add(fb.getAdoptedDishId());
+            }
+        }
 
         for (RecommendationRecord r : records) {
             if (r.getRecommendedDishIds() == null || r.getRecommendedDishIds().isEmpty()) continue;
+            Set<Long> adoptedSet = adoptedMap.getOrDefault(r.getId(), Collections.emptySet());
             String[] ids = r.getRecommendedDishIds().split(",");
             for (String idStr : ids) {
                 try {
                     Long dishId = Long.parseLong(idStr.trim());
                     long[] stats = dishStats.computeIfAbsent(dishId, k -> new long[2]);
-                    stats[0]++;
-                    if (r.getAdopted() != null && r.getAdopted() == 1
-                            && r.getAdoptedDishId() != null
-                            && r.getAdoptedDishId().equals(dishId)) {
-                        stats[1]++;
+                    stats[0]++; // 推荐次数
+                    if (adoptedSet.contains(dishId)) {
+                        stats[1]++; // 采纳次数
                     }
                 } catch (NumberFormatException ignored) {}
             }

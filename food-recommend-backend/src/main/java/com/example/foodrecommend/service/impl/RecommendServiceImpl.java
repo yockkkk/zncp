@@ -50,8 +50,8 @@ public class RecommendServiceImpl implements RecommendService {
 
         RerankResultDTO rerankResult = aiRerankService.rerank(profile, filteredDishes);
 
-        Long recordId = saveRecommendationRecord(userId, imageUrl, null, null,
-                profile, queryText, rerankResult.getRecommendations(), null);
+        Long recordId = saveRecommendationRecord(userId, null, imageUrl, null, null,
+                profile, queryText, rerankResult.getRecommendations(), (ScriptResultDTO) null);
 
         RecommendResultDTO result = new RecommendResultDTO();
         result.setRecordId(recordId);
@@ -94,11 +94,11 @@ public class RecommendServiceImpl implements RecommendService {
                 profile, rerankResult.getRecommendations());
 
         // === 保存记录 ===
-        Long recordId = saveRecommendationRecord(null, sceneImageUrl,
+        Long recordId = saveRecommendationRecord(null, tags.getPhone(), sceneImageUrl,
                 waiterId, request.getTagInputJson(),
                 profile, queryText,
                 rerankResult.getRecommendations(),
-                scriptResult != null ? scriptResult.getDishScripts() : null);
+                scriptResult);
 
         // === 组装结果 ===
         RecommendWithScriptDTO result = new RecommendWithScriptDTO();
@@ -179,14 +179,15 @@ public class RecommendServiceImpl implements RecommendService {
         vectorSearchService.upsertDishVector(dish.getId(), vector, payload);
     }
 
-    private Long saveRecommendationRecord(Long userId, String imageUrl,
+    private Long saveRecommendationRecord(Long userId, String phone, String imageUrl,
                                            Long waiterId, String tagInputJson,
                                            UserProfileDTO profile, String queryText,
                                            List<RecommendDishDTO> results,
-                                           List<DishScriptDTO> dishScripts) {
+                                           ScriptResultDTO scriptResult) {
         try {
             RecommendationRecord record = new RecommendationRecord();
             record.setUserId(userId);
+            record.setPhone(phone);
             record.setWaiterId(waiterId);
             record.setImageUrl(imageUrl);
             record.setTagInputJson(tagInputJson);
@@ -200,15 +201,15 @@ public class RecommendServiceImpl implements RecommendService {
             record.setRecommendedDishIds(dishIds);
             record.setResultJson(objectMapper.writeValueAsString(results));
 
-            if (dishScripts != null && !dishScripts.isEmpty()) {
-                record.setScriptResultJson(objectMapper.writeValueAsString(dishScripts));
+            if (scriptResult != null) {
+                record.setScriptResultJson(objectMapper.writeValueAsString(scriptResult));
             }
 
             recordMapper.insert(record);
             return record.getId();
         } catch (Exception e) {
             log.error("保存推荐记录失败", e);
-            return null;
+            throw new BusinessException("保存推荐记录失败: " + e.getMessage());
         }
     }
 

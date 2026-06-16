@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS dish (
 CREATE TABLE IF NOT EXISTS recommendation_record (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '推荐记录ID',
     user_id BIGINT COMMENT '用户ID，可为空',
+    phone VARCHAR(20) DEFAULT NULL COMMENT '顾客手机号',
     waiter_id BIGINT COMMENT '发起推荐的服务员ID',
     image_url VARCHAR(500) COMMENT '用户上传图片地址',
     video_url VARCHAR(500) COMMENT '用户上传视频地址',
@@ -47,6 +48,7 @@ CREATE TABLE IF NOT EXISTS recommendation_record (
     script_result_json TEXT COMMENT '话术生成结果JSON',
     adopted TINYINT DEFAULT 0 COMMENT '是否被采纳：1是，0否',
     adopted_dish_id BIGINT COMMENT '被采纳的具体菜品ID',
+    adopted_quantity INT DEFAULT 1 COMMENT '采纳数量',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP
 ) COMMENT='推荐记录表';
 
@@ -93,6 +95,7 @@ CREATE TABLE IF NOT EXISTS recommendation_feedback (
     record_id BIGINT NOT NULL COMMENT '推荐记录ID',
     waiter_id BIGINT NOT NULL COMMENT '服务员ID',
     adopted_dish_id BIGINT COMMENT '被采纳菜品ID',
+    quantity INT DEFAULT 1 COMMENT '采纳数量',
     rating TINYINT COMMENT '1-5星评分',
     note VARCHAR(500) COMMENT '反馈备注',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP,

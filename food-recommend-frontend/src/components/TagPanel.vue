@@ -12,6 +12,49 @@
 
     <!-- 1. 常规推荐模式 -->
     <div v-if="selected.mode === 'single'">
+      <!-- 顾客手机号 (长期记忆) -->
+      <div class="tag-row align-center">
+        <span class="tag-label">手机号</span>
+        <div class="phone-input-wrap">
+          <el-input v-model="selected.phone" placeholder="输入11位手机号查询长期记忆" size="small" clearable style="width: 220px" @input="onPhoneInput">
+            <template #prefix>
+              <span class="phone-emoji">📱</span>
+            </template>
+          </el-input>
+          <span v-if="phoneLoading" class="phone-loading-text"><el-icon class="is-loading"><Loading /></el-icon></span>
+        </div>
+      </div>
+
+      <!-- 长期记忆提示 -->
+      <div v-if="historyProfile" class="history-profile-card">
+        <div class="h-card-header">
+          <span class="h-card-title">🧠 长期记忆 (历史画像)</span>
+          <el-button v-if="hasHistory" type="success" size="small" plain round @click="applyHistoryTastes">
+            一键套用
+          </el-button>
+        </div>
+        <div class="h-card-body">
+          <p class="desc">{{ historyProfile.historyDescription }}</p>
+          <div class="history-tags">
+            <el-tag v-for="taste in historyProfile.historyTastes" :key="'h-taste-'+taste" size="small" type="success" effect="plain" class="h-tag">
+              {{ taste }}
+            </el-tag>
+            <el-tag v-for="avoid in historyProfile.consolidatedAvoids" :key="'h-avoid-'+avoid" size="small" type="danger" effect="plain" class="h-tag">
+              忌口: {{ avoid }}
+            </el-tag>
+            <el-tag v-for="allergen in historyProfile.consolidatedAllergens" :key="'h-allergen-'+allergen" size="small" type="danger" effect="plain" class="h-tag">
+              过敏: {{ allergen }}
+            </el-tag>
+            <el-tag v-for="disease in historyProfile.consolidatedDiseases" :key="'h-disease-'+disease" size="small" type="warning" effect="plain" class="h-tag">
+              禁忌: {{ disease }}
+            </el-tag>
+            <el-tag v-for="lifestyle in historyProfile.consolidatedDietLifestyles" :key="'h-lifestyle-'+lifestyle" size="small" type="primary" effect="plain" class="h-tag">
+              {{ lifestyle }}
+            </el-tag>
+          </div>
+        </div>
+      </div>
+
       <!-- 用餐人数 -->
       <div class="tag-row">
         <span class="tag-label">用餐人数</span>
@@ -47,6 +90,45 @@
             :effect="selected.tastePreferences.includes(opt.value) ? 'dark' : 'plain'"
             class="tag-item" @click="toggleTaste(opt.value)">
             {{ opt.label }}
+          </el-tag>
+        </div>
+      </div>
+
+      <!-- 忌口不吃（多选） -->
+      <div class="tag-row">
+        <span class="tag-label">忌口不吃</span>
+        <div class="tag-group">
+          <el-tag v-for="opt in GUEST_AVOID_OPTIONS" :key="opt"
+            :type="selected.avoidIngredients.includes(opt) ? 'danger' : 'info'"
+            :effect="selected.avoidIngredients.includes(opt) ? 'dark' : 'plain'"
+            class="tag-item" @click="toggleAvoid(opt)">
+            {{ opt }}
+          </el-tag>
+        </div>
+      </div>
+
+      <!-- 过敏源（多选） -->
+      <div class="tag-row">
+        <span class="tag-label">过敏源</span>
+        <div class="tag-group">
+          <el-tag v-for="opt in GUEST_ALLERGEN_OPTIONS" :key="opt"
+            :type="selected.allergens.includes(opt) ? 'danger' : 'info'"
+            :effect="selected.allergens.includes(opt) ? 'dark' : 'plain'"
+            class="tag-item" @click="toggleAllergen(opt)">
+            {{ opt }}
+          </el-tag>
+        </div>
+      </div>
+
+      <!-- 疾病禁忌（多选） -->
+      <div class="tag-row">
+        <span class="tag-label">疾病禁忌</span>
+        <div class="tag-group">
+          <el-tag v-for="opt in GUEST_DISEASE_OPTIONS" :key="opt"
+            :type="selected.diseases.includes(opt) ? 'danger' : 'info'"
+            :effect="selected.diseases.includes(opt) ? 'dark' : 'plain'"
+            class="tag-item" @click="toggleDisease(opt)">
+            {{ opt }}
           </el-tag>
         </div>
       </div>
@@ -218,6 +300,10 @@ const TASTE_OPTIONS = [
   { label: '清淡', value: '清淡' },
   { label: '甜', value: '甜' },
   { label: '咸', value: '咸' },
+  { label: '爱吃酸', value: '爱吃酸' },
+  { label: '爱吃麻', value: '爱吃麻' },
+  { label: '不爱甜', value: '不爱甜' },
+  { label: '喜欢嫩', value: '喜欢嫩' },
   { label: '无偏好', value: '无偏好' }
 ]
 
@@ -249,15 +335,29 @@ const GUEST_AVOID_OPTIONS = ['辣', '香菜', '葱', '蒜', '牛肉', '羊肉']
 const GUEST_ALLERGEN_OPTIONS = ['花生', '海鲜', '鸡蛋', '牛奶']
 const GUEST_DISEASE_OPTIONS = ['痛风', '糖尿病', '高血压', '胃病', '术后']
 const GUEST_LIFESTYLE_OPTIONS = ['清真', '素食', 'Keto', '减脂']
+import api from '../api'
+
 const GUEST_TASTE_OPTIONS = ['爱吃酸', '爱吃麻', '不爱甜', '喜欢嫩', '要下饭', '要清淡']
 
 const activeGuestNames = ref(['0'])
 
+const historyProfile = ref(null)
+const phoneLoading = ref(false)
+
+const hasHistory = computed(() => {
+  return historyProfile.value && historyProfile.value.historyDescription && !historyProfile.value.historyDescription.includes('无历史消费记录')
+})
+
 const selected = reactive({
   mode: 'single',
+  phone: '',
   peopleCount: null,
   diningScene: null,
   tastePreferences: [],
+  avoidIngredients: [],
+  allergens: [],
+  diseases: [],
+  dietLifestyles: [],
   budgetLevel: null,
   dietaryRestriction: null,
   mealTime: null,
@@ -284,8 +384,80 @@ function handleModeChange(mode) {
       addGuest()
       addGuest() // default to 2 guests
     }
+    selected.phone = ''
+    historyProfile.value = null
   } else {
     selected.guests = []
+  }
+}
+
+async function onPhoneInput(val) {
+  const phone = val ? val.trim() : ''
+  if (phone.length === 11) {
+    phoneLoading.value = true
+    try {
+      const res = await api.get(`/waiter/customer/profile?phone=${phone}`)
+      historyProfile.value = res.data
+    } catch (e) {
+      console.error('获取顾客历史画像失败', e)
+      historyProfile.value = null
+    } finally {
+      phoneLoading.value = false
+    }
+  } else {
+    historyProfile.value = null
+  }
+}
+
+function applyHistoryTastes() {
+  if (historyProfile.value) {
+    // 1. Tastes
+    if (historyProfile.value.historyTastes) {
+      historyProfile.value.historyTastes.forEach(taste => {
+        if (!selected.tastePreferences.includes(taste)) {
+          selected.tastePreferences.push(taste)
+        }
+      })
+      const noPrefIdx = selected.tastePreferences.indexOf('无偏好')
+      if (noPrefIdx >= 0) {
+        selected.tastePreferences.splice(noPrefIdx, 1)
+      }
+    }
+    // 2. Avoid ingredients
+    if (historyProfile.value.consolidatedAvoids) {
+      historyProfile.value.consolidatedAvoids.forEach(avoid => {
+        if (!selected.avoidIngredients.includes(avoid)) {
+          selected.avoidIngredients.push(avoid)
+        }
+      })
+    }
+    // 3. Allergens
+    if (historyProfile.value.consolidatedAllergens) {
+      historyProfile.value.consolidatedAllergens.forEach(allergen => {
+        if (!selected.allergens.includes(allergen)) {
+          selected.allergens.push(allergen)
+        }
+      })
+    }
+    // 4. Diseases
+    if (historyProfile.value.consolidatedDiseases) {
+      historyProfile.value.consolidatedDiseases.forEach(disease => {
+        if (!selected.diseases.includes(disease)) {
+          selected.diseases.push(disease)
+        }
+      })
+    }
+    // 5. Diet lifestyles
+    if (historyProfile.value.consolidatedDietLifestyles) {
+      historyProfile.value.consolidatedDietLifestyles.forEach(lifestyle => {
+        if (!selected.dietLifestyles.includes(lifestyle)) {
+          selected.dietLifestyles.push(lifestyle)
+        }
+        if (['素食', '低脂', '高蛋白'].includes(lifestyle)) {
+          selected.dietaryRestriction = lifestyle
+        }
+      })
+    }
   }
 }
 
@@ -320,18 +492,48 @@ function toggleTaste(value) {
   }
 }
 
+function toggleAvoid(value) {
+  const idx = selected.avoidIngredients.indexOf(value)
+  if (idx >= 0) {
+    selected.avoidIngredients.splice(idx, 1)
+  } else {
+    selected.avoidIngredients.push(value)
+  }
+}
+
+function toggleAllergen(value) {
+  const idx = selected.allergens.indexOf(value)
+  if (idx >= 0) {
+    selected.allergens.splice(idx, 1)
+  } else {
+    selected.allergens.push(value)
+  }
+}
+
+function toggleDisease(value) {
+  const idx = selected.diseases.indexOf(value)
+  if (idx >= 0) {
+    selected.diseases.splice(idx, 1)
+  } else {
+    selected.diseases.push(value)
+  }
+}
+
 function reset() {
+  selected.mode = 'single'
+  selected.phone = ''
   selected.peopleCount = null
   selected.diningScene = null
   selected.tastePreferences = []
+  selected.avoidIngredients = []
+  selected.allergens = []
+  selected.diseases = []
+  selected.dietLifestyles = []
   selected.budgetLevel = null
   selected.dietaryRestriction = null
   selected.mealTime = null
   selected.guests = []
-  if (selected.mode === 'multi') {
-    addGuest()
-    addGuest()
-  }
+  historyProfile.value = null
 }
 
 const summaryText = computed(() => {
@@ -339,7 +541,10 @@ const summaryText = computed(() => {
     const parts = []
     if (selected.peopleCount) parts.push(PEOPLE_OPTIONS.find(o => o.value === selected.peopleCount)?.label)
     if (selected.diningScene) parts.push(selected.diningScene)
-    if (selected.tastePreferences.length) parts.push(selected.tastePreferences.join('、'))
+    if (selected.tastePreferences.length) parts.push('口味:' + selected.tastePreferences.join('、'))
+    if (selected.avoidIngredients.length) parts.push('忌口:' + selected.avoidIngredients.join('、'))
+    if (selected.allergens.length) parts.push('过敏:' + selected.allergens.join('、'))
+    if (selected.diseases.length) parts.push('禁忌:' + selected.diseases.join('、'))
     if (selected.budgetLevel) parts.push(selected.budgetLevel)
     if (selected.dietaryRestriction) parts.push(selected.dietaryRestriction)
     if (selected.mealTime) parts.push(selected.mealTime)
@@ -354,7 +559,7 @@ const summaryText = computed(() => {
   }
 })
 
-defineExpose({ selected })
+defineExpose({ selected, reset })
 </script>
 
 <style scoped>
@@ -445,5 +650,57 @@ defineExpose({ selected })
   color: #909399;
   margin-bottom: 4px;
   font-weight: 500;
+}
+.align-center {
+  align-items: center;
+}
+.phone-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.phone-emoji {
+  font-size: 14px;
+}
+.phone-loading-text {
+  color: #409eff;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+.history-profile-card {
+  margin: 4px 0 16px 80px;
+  background: linear-gradient(135deg, #f0f7ff, #e6f0ff);
+  border: 1px solid #cce0ff;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 12px 0 rgba(64, 158, 255, 0.05);
+  transition: all 0.3s ease;
+}
+.h-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.h-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1d3461;
+}
+.h-card-body .desc {
+  font-size: 12px;
+  color: #4a5568;
+  margin: 0 0 8px 0;
+  line-height: 1.5;
+}
+.history-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.h-tag {
+  border-radius: 12px;
+  font-size: 11px;
 }
 </style>
