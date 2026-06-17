@@ -1,0 +1,5 @@
+.container { padding: 16px; }
+.empty-box { display: flex; flex-direction: column; align-items: center; padding: 80px 0; }
+.empty-icon { font-size: 48px; margin-bottom: 16px; }
+.empty-text { font-size: 16px; color: #606266; margin-bottom: 8px; }
+.history-card { }

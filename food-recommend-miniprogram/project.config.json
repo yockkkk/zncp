@@ -1,0 +1,13 @@
+{
+  "description": "智能餐饮推荐 - 服务员端",
+  "appid": "your-appid-here",
+  "projectname": "food-recommend",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "minified": true,
+    "postcss": true
+  },
+  "libVersion": "3.6.0",
+  "condition": {}
+}

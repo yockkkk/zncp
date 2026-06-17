@@ -1,6 +1,7 @@
 package com.example.foodrecommend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.foodrecommend.common.BusinessException;
 import com.example.foodrecommend.dto.LoginDTO;
 import com.example.foodrecommend.dto.LoginResultDTO;
@@ -8,12 +9,19 @@ import com.example.foodrecommend.entity.User;
 import com.example.foodrecommend.mapper.UserMapper;
 import com.example.foodrecommend.security.JwtTokenProvider;
 import com.example.foodrecommend.service.UserService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -23,6 +31,74 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final OkHttpClient httpClient;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Override
+    public LoginResultDTO wxLogin(String code) {
+        // 调用微信 jscode2session 获取 openid
+        String openid;
+        try {
+            String appId = System.getProperty("wx.appid", "");
+            String secret = System.getProperty("wx.secret", "");
+            String url = "https://api.weixin.qq.com/sns/jscode2session"
+                    + "?appid=" + appId
+                    + "&secret=" + secret
+                    + "&js_code=" + code
+                    + "&grant_type=authorization_code";
+
+            Request request = new Request.Builder().url(url).get().build();
+            try (Response response = httpClient.newCall(request).execute()) {
+                if (response.body() == null) {
+                    throw new BusinessException("微信登录失败：无响应");
+                }
+                JsonNode json = objectMapper.readTree(response.body().string());
+                if (json.has("errcode") && json.get("errcode").asInt() != 0) {
+                    log.error("微信 jscode2session 失败: {}", json);
+                    throw new BusinessException("微信登录失败: " + json.path("errmsg").asText());
+                }
+                openid = json.get("openid").asText();
+                log.info("微信 openid: {}", openid);
+            }
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("调用微信登录接口异常", e);
+            throw new BusinessException("微信登录服务不可用: " + e.getMessage());
+        }
+
+        // 根据 openid 查找已有用户
+        User user = userMapper.selectOne(
+                new LambdaQueryWrapper<User>().eq(User::getOpenid, openid)
+        );
+
+        if (user == null) {
+            // 自动注册新服务员
+            user = new User();
+            user.setOpenid(openid);
+            user.setUsername("wx_" + openid.substring(0, Math.min(8, openid.length())));
+            user.setRealName("微信服务员");
+            user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+            user.setRole("WAITER");
+            user.setStatus(1);
+            userMapper.insert(user);
+            log.info("微信新用户自动注册: id={}, openid={}", user.getId(), openid);
+        }
+
+        if (user.getStatus() != null && user.getStatus() == 0) {
+            throw new BusinessException("账号已被禁用，请联系管理员");
+        }
+
+        String token = jwtTokenProvider.generateToken(user.getId(), user.getUsername(), user.getRole());
+
+        LoginResultDTO result = new LoginResultDTO();
+        result.setToken(token);
+        result.setUserId(user.getId());
+        result.setUsername(user.getUsername());
+        result.setRealName(user.getRealName());
+        result.setRole(user.getRole());
+        return result;
+    }
 
     @Override
     public LoginResultDTO login(LoginDTO loginDTO) {

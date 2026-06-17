@@ -1,0 +1,161 @@
+<view class="container">
+  <!-- 状态栏 -->
+  <view class="status-bar" wx:if="{{userInfo}}">
+    <text class="text-muted">👤 {{userInfo.realName || userInfo.username}}</text>
+    <text class="text-muted">· 服务员</text>
+  </view>
+
+  <!-- ===== 未开始：录音区域 ===== -->
+  <view wx:if="{{!result && !loading && !showTags}}" class="main-section">
+    <!-- 大圆形录音按钮 -->
+    <view class="mic-wrapper">
+      <view class="mic-ring {{listening ? 'pulse' : ''}}">
+        <view class="mic-btn" bindtouchstart="startRecord" bindtouchend="stopRecord">
+          <text class="mic-icon">🎤</text>
+        </view>
+      </view>
+      <text class="mic-label">{{listening ? '正在聆听...' : '按住说话'}}</text>
+    </view>
+
+    <!-- 语音文本展示 -->
+    <view class="transcript-box" wx:if="{{voiceText}}">
+      <view class="transcript-header flex-between">
+        <text class="text-bold">🗣️ 您说的是：</text>
+        <text class="text-muted" bindtap="clearVoice">清除</text>
+      </view>
+      <text class="transcript-text">{{voiceText}}</text>
+      <view class="mt-12">
+        <button class="btn-primary" bindtap="processVoice" loading="{{processing}}">
+          生成推荐
+        </button>
+      </view>
+    </view>
+
+    <!-- 不支持语音时的降级提示 -->
+    <view wx:if="{{!voiceSupported}}" class="fallback-box card mt-16">
+      <text class="text-muted">⚠️ 当前环境不支持录音，请使用微信小程序</text>
+    </view>
+  </view>
+
+  <!-- ===== Agent 0 提取的标签确认 ===== -->
+  <view wx:if="{{showTags && extractedTags}}" class="tags-section">
+    <view class="card">
+      <view class="flex-between mb-12">
+        <text class="text-bold">✅ AI 理解了您的需求</text>
+        <text class="text-muted" bindtap="resetAll">重新录音</text>
+      </view>
+      <view class="flex-row flex-wrap">
+        <text class="tag tag-primary" wx:if="{{extractedTags.peopleCount}}">
+          👥 {{extractedTags.peopleCount}}人
+        </text>
+        <text class="tag tag-success" wx:if="{{extractedTags.diningScene}}">
+          🍽️ {{extractedTags.diningScene}}
+        </text>
+        <text class="tag tag-warning" wx:if="{{extractedTags.budgetLevel}}">
+          💰 {{extractedTags.budgetLevel}}
+        </text>
+        <text class="tag tag-danger" wx:if="{{extractedTags.mealTime}}">
+          🕐 {{extractedTags.mealTime}}
+        </text>
+      </view>
+      <view class="flex-row flex-wrap" wx:if="{{extractedTags.tastePreferences && extractedTags.tastePreferences.length > 0}}">
+        <text class="tag tag-primary" wx:for="{{extractedTags.tastePreferences}}" wx:key="*this">
+          {{item}}
+        </text>
+      </view>
+    </view>
+    <button class="btn-primary" bindtap="doRecommend" loading="{{loading}}">
+      确认并生成推荐
+    </button>
+    <view class="tag-edit-hint text-muted mt-12" style="text-align:center">
+      标签不准确？重新录音即可修正
+    </view>
+  </view>
+
+  <!-- ===== 加载中 ===== -->
+  <view wx:if="{{loading}}" class="loading-section card mt-16">
+    <text class="text-bold">🤖 AI 正在分析推荐中...</text>
+    <view class="agent-steps mt-16">
+      <view class="step {{currentStep >= 0 ? 'done' : ''}}">语音理解</view>
+      <view class="step {{currentStep >= 1 ? 'done' : ''}}">场景感知</view>
+      <view class="step {{currentStep >= 2 ? 'done' : ''}}">用户画像</view>
+      <view class="step {{currentStep >= 3 ? 'done' : ''}}">菜品匹配</view>
+      <view class="step {{currentStep >= 4 ? 'done' : ''}}">智能排序</view>
+      <view class="step {{currentStep >= 5 ? 'done' : ''}}">话术生成</view>
+    </view>
+  </view>
+
+  <!-- ===== 推荐结果 ===== -->
+  <view wx:if="{{result}}" class="result-section">
+    <!-- 顾客画像 -->
+    <view class="card">
+      <view class="text-bold mb-12">👤 顾客画像</view>
+      <view class="profile-grid">
+        <view class="profile-item" wx:if="{{result.userProfile.peopleCount}}">
+          <text class="text-muted">人数</text>
+          <text class="text-bold">{{result.userProfile.peopleCount}}人</text>
+        </view>
+        <view class="profile-item" wx:if="{{result.userProfile.diningScene}}">
+          <text class="text-muted">场景</text>
+          <text class="text-bold">{{result.userProfile.diningScene}}</text>
+        </view>
+        <view class="profile-item" wx:if="{{result.userProfile.estimatedConsumptionLevel}}">
+          <text class="text-muted">消费</text>
+          <text class="text-bold">{{result.userProfile.estimatedConsumptionLevel}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 话术 -->
+    <view class="card script-card" wx:if="{{result.openingScript}}">
+      <view class="text-bold mb-12">💬 推荐话术</view>
+      <text class="script-text">{{result.openingScript}}</text>
+    </view>
+
+    <!-- 推荐菜品 -->
+    <view class="text-bold mt-16 mb-12">⭐ 推荐菜品</view>
+    <view class="dish-card card" wx:for="{{result.recommendations}}" wx:key="dishId">
+      <view class="flex-between">
+        <view class="flex-row">
+          <text class="rank-badge">
+            {{item.rank === 1 ? '🥇' : item.rank === 2 ? '🥈' : item.rank === 3 ? '🥉' : '#' + item.rank}}
+          </text>
+          <view>
+            <text class="text-bold dish-name">{{item.name}}</text>
+            <view class="flex-row mt-12">
+              <text class="tag tag-warning">¥{{item.price}}</text>
+              <text class="tag">{{item.calories}}kcal</text>
+              <text class="tag tag-success">蛋白{{item.protein}}g</text>
+            </view>
+          </view>
+        </view>
+        <text class="dish-score">{{item.score}}分</text>
+      </view>
+      <view class="dish-reasons mt-12">
+        <text class="reason-line">📌 {{item.reason}}</text>
+        <text class="reason-line">🥗 {{item.nutritionComment}}</text>
+        <text class="reason-line">💰 {{item.costPerformanceComment}}</text>
+      </view>
+      <!-- 话术 -->
+      <view class="dish-script" wx:if="{{result.dishScripts}}">
+        <text class="script-label">💬 话术：</text>
+        <text wx:for="{{result.dishScripts}}" wx:key="dishId" wx:if="{{item.dishId === it.dishId}}">
+          {{it.script}}
+        </text>
+      </view>
+      <!-- 采纳按钮 -->
+      <view class="mt-12 flex-between">
+        <text class="text-muted">{{adoptedDishes[item.dishId] ? '已采纳 ✓' : ''}}</text>
+        <button size="mini" type="primary" plain
+          bindtap="adoptDish" data-id="{{item.dishId}}"
+          disabled="{{adoptedDishes[item.dishId]}}">
+          {{adoptedDishes[item.dishId] ? '已采纳' : '顾客选了这道 ✓'}}
+        </button>
+      </view>
+    </view>
+
+    <view class="mt-16 mb-12" style="text-align:center">
+      <button size="mini" type="default" bindtap="resetAll">开始新推荐</button>
+    </view>
+  </view>
+</view>

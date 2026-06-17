@@ -14,6 +14,11 @@ public interface RecommendService {
                                             MultipartFile sceneImage,
                                             Long waiterId);
 
+    /** 语音推荐（Agent 0 语音理解 + 5 Agent 管线） */
+    RecommendWithScriptDTO recommendByVoice(String voiceText,
+                                             MultipartFile sceneImage,
+                                             Long waiterId);
+
     void batchRebuildVectors();
 
     void rebuildDishVector(Long dishId);

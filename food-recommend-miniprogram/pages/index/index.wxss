@@ -1,0 +1,70 @@
+.container { padding: 20px 16px; }
+.status-bar { padding: 8px 0 16px; }
+
+/* ===== 录音按钮 ===== */
+.main-section { display: flex; flex-direction: column; align-items: center; padding-top: 60px; }
+.mic-wrapper { display: flex; flex-direction: column; align-items: center; margin-bottom: 40px; }
+.mic-ring {
+  width: 160px; height: 160px; border-radius: 50%;
+  background: #f0f5ff; display: flex; align-items: center; justify-content: center;
+  border: 4px solid #e0eaff;
+}
+.mic-ring.pulse {
+  animation: micPulse 1.5s infinite;
+  border-color: #409eff;
+  background: #ecf5ff;
+}
+@keyframes micPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(64,158,255,0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(64,158,255,0); }
+}
+.mic-btn {
+  width: 120px; height: 120px; border-radius: 50%;
+  background: linear-gradient(135deg, #409eff, #337ecc);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 24px rgba(64,158,255,0.3);
+}
+.mic-icon { font-size: 48px; }
+.mic-label { margin-top: 20px; font-size: 16px; color: #606266; }
+
+/* ===== 语音文本 ===== */
+.transcript-box { margin-top: 24px; width: 100%; }
+.transcript-header { padding-bottom: 8px; }
+.transcript-text { font-size: 15px; color: #303133; line-height: 1.6; display: block; padding: 12px; background: #f8f9fb; border-radius: 8px; }
+
+/* ===== 标签确认 ===== */
+.tags-section { }
+.tag-edit-hint { }
+
+/* ===== 加载动画 ===== */
+.loading-section { text-align: center; padding: 40px 16px; }
+.agent-steps { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.step {
+  padding: 6px 14px; border-radius: 20px; font-size: 12px;
+  background: #eceff4; color: #909399;
+}
+.step.done { background: #f0f9eb; color: #67c23a; }
+
+/* ===== 用户画像 ===== */
+.profile-grid { display: flex; gap: 16px; flex-wrap: wrap; }
+.profile-item { display: flex; flex-direction: column; gap: 2px; }
+
+/* ===== 话术 ===== */
+.script-card { background: #f0f9eb; border-left: 4px solid #67c23a; }
+.script-text { font-size: 14px; color: #303133; line-height: 1.7; }
+
+/* ===== 菜品卡片 ===== */
+.dish-card { }
+.rank-badge { font-size: 28px; margin-right: 12px; }
+.dish-name { font-size: 16px; }
+.dish-score { font-size: 22px; font-weight: 700; color: #e6a23c; }
+.dish-reasons { font-size: 13px; color: #606266; }
+.reason-line { display: block; margin-bottom: 4px; line-height: 1.6; }
+.dish-script {
+  margin-top: 10px; padding: 10px 12px; background: #f0f9eb;
+  border-radius: 8px; font-size: 13px; line-height: 1.7;
+}
+.script-label { color: #67c23a; font-weight: 600; }
+
+/* ===== 降级提示 ===== */
+.fallback-box { text-align: center; padding: 24px; }

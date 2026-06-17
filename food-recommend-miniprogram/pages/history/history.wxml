@@ -1,0 +1,35 @@
+<view class="container">
+  <!-- 空状态 -->
+  <view wx:if="{{!loading && records.length === 0}}" class="empty-box">
+    <text class="empty-icon">📋</text>
+    <text class="empty-text">暂无推荐记录</text>
+    <text class="text-muted">去做一次语音推荐吧</text>
+  </view>
+
+  <!-- 记录卡片列表 -->
+  <view wx:for="{{records}}" wx:key="id" class="card history-card">
+    <view class="flex-between mb-12">
+      <text class="text-muted">{{item.createTime}}</text>
+      <text class="tag {{item.adopted === 1 ? 'tag-success' : ''}}">
+        {{item.adopted === 1 ? '已采纳' : '未采纳'}}
+      </text>
+    </view>
+
+    <!-- 标签摘要 -->
+    <view class="flex-row flex-wrap">
+      <text class="tag tag-primary" wx:for="{{item._tags}}" wx:key="*this" wx:if="{{item}}">
+        {{item}}
+      </text>
+    </view>
+
+    <!-- 推荐菜品 -->
+    <view class="flex-row flex-wrap mt-12">
+      <text class="tag tag-warning" wx:for="{{item._dishes}}" wx:key="name" wx:for-item="d">
+        {{d.name}}
+      </text>
+    </view>
+  </view>
+
+  <!-- 加载更多 -->
+  <view wx:if="{{loading}}" class="text-muted mt-16" style="text-align:center">加载中...</view>
+</view>

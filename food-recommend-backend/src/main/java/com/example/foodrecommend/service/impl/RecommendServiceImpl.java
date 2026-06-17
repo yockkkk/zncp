@@ -37,6 +37,7 @@ public class RecommendServiceImpl implements RecommendService {
     private final DishMatchingService dishMatchingService;             // Agent 3
     private final RecommendationRankingService recommendationRankingService; // Agent 4
     private final ScriptGenerationService scriptGenerationService;     // Agent 5
+    private final VoiceUnderstandingService voiceUnderstandingService; // Agent 0
 
     // ========== 旧版：图片推荐（保持兼容）==========
 
@@ -70,10 +71,32 @@ public class RecommendServiceImpl implements RecommendService {
     public RecommendWithScriptDTO recommendByTags(RecommendRequestDTO request,
                                                    MultipartFile sceneImage,
                                                    Long waiterId) {
-        // 解析标签输入
         TagInputDTO tags = parseTagInput(request.getTagInputJson());
+        return executeAgentPipeline(tags, sceneImage, waiterId, request.getTagInputJson());
+    }
 
-        // === Agent 1: 场景感知（可选，上传场景照片时触发）===
+    // ========== 语音推荐（Agent 0 + 5 Agent 管线）==========
+
+    @Override
+    public RecommendWithScriptDTO recommendByVoice(String voiceText,
+                                                    MultipartFile sceneImage,
+                                                    Long waiterId) {
+        // === Agent 0: 语音理解 ===
+        TagInputDTO tags = voiceUnderstandingService.parseVoiceText(voiceText);
+        if (tags == null) {
+            throw new BusinessException("语音理解失败，请重试或使用标签面板");
+        }
+        log.info("Agent0-语音→标签: {}", tags);
+        return executeAgentPipeline(tags, sceneImage, waiterId, voiceText);
+    }
+
+    // ========== 共享管线：Agent 1-5 ==========
+
+    private RecommendWithScriptDTO executeAgentPipeline(TagInputDTO tags,
+                                                         MultipartFile sceneImage,
+                                                         Long waiterId,
+                                                         String tagInputJson) {
+        // === Agent 1: 场景感知 ===
         String sceneImageUrl = null;
         SceneContextDTO sceneContext = null;
         if (sceneImage != null && !sceneImage.isEmpty()) {
@@ -97,7 +120,7 @@ public class RecommendServiceImpl implements RecommendService {
 
         // === 保存记录 ===
         Long recordId = saveRecommendationRecord(null, sceneImageUrl,
-                waiterId, request.getTagInputJson(),
+                waiterId, tagInputJson,
                 profile, queryText,
                 rerankResult.getRecommendations(),
                 scriptResult != null ? scriptResult.getDishScripts() : null);

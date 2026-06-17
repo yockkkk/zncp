@@ -10,6 +10,9 @@ public interface UserService {
     /** 登录：验证用户名密码，返回 JWT Token */
     LoginResultDTO login(LoginDTO loginDTO);
 
+    /** 微信小程序登录：根据 wx code 自动注册/登录 */
+    LoginResultDTO wxLogin(String code);
+
     /** 创建员工账号（仅老板可操作） */
     User createWaiter(String username, String password, String realName, String phone);
 

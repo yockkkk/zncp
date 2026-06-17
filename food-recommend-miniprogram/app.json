@@ -1,0 +1,40 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/history/history"
+  ],
+  "window": {
+    "navigationBarTitleText": "智能餐饮推荐",
+    "navigationBarBackgroundColor": "#1a1a2e",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f5f7fa"
+  },
+  "tabBar": {
+    "color": "#999",
+    "selectedColor": "#409eff",
+    "backgroundColor": "#fff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "语音推荐",
+        "iconPath": "images/mic.png",
+        "selectedIconPath": "images/mic-active.png"
+      },
+      {
+        "pagePath": "pages/history/history",
+        "text": "我的记录",
+        "iconPath": "images/list.png",
+        "selectedIconPath": "images/list-active.png"
+      }
+    ]
+  },
+  "plugins": {
+    "WechatSI": {
+      "version": "0.3.6",
+      "provider": "wx069ba97219f66d99"
+    }
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

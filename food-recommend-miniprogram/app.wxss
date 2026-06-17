@@ -1,0 +1,27 @@
+page { background: #f5f7fa; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; }
+.container { padding: 16px; }
+.card {
+  background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.btn-primary {
+  background: linear-gradient(135deg, #409eff, #337ecc);
+  color: #fff; border: none; border-radius: 10px;
+  font-size: 16px; font-weight: 600; padding: 14px 0;
+}
+.tag {
+  display: inline-block; padding: 4px 12px; border-radius: 20px;
+  font-size: 12px; margin: 4px 6px 4px 0;
+}
+.tag-primary { background: #ecf5ff; color: #409eff; }
+.tag-success { background: #f0f9eb; color: #67c23a; }
+.tag-warning { background: #fdf6ec; color: #e6a23c; }
+.tag-danger { background: #fef0f0; color: #f56c6c; }
+.flex-row { display: flex; align-items: center; }
+.flex-wrap { flex-wrap: wrap; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.text-muted { color: #909399; font-size: 13px; }
+.text-bold { font-weight: 600; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mb-12 { margin-bottom: 12px; }

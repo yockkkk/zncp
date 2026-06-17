@@ -21,6 +21,10 @@ public class User {
     /** 角色：WAITER / OWNER */
     private String role;
     private String phone;
+    /** 微信openid */
+    private String openid;
+    /** 微信unionid */
+    private String unionid;
     /** 状态：1启用，0禁用 */
     private Integer status;
     private LocalDateTime createTime;

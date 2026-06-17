@@ -62,6 +62,25 @@ public class WaiterRecommendController {
     }
 
     /**
+     * 语音推荐（Agent 0 + 5 Agent 管线）
+     * 适用于微信小程序语音输入
+     */
+    @PostMapping("/recommend/voice")
+    public Result<RecommendWithScriptDTO> recommendByVoice(
+            @RequestParam("voiceText") String voiceText,
+            @RequestParam(value = "sceneImage", required = false) MultipartFile sceneImage,
+            @AuthenticationPrincipal UserPrincipal principal) {
+
+        if (voiceText == null || voiceText.trim().isEmpty()) {
+            throw new BusinessException("语音文本不能为空");
+        }
+
+        RecommendWithScriptDTO result = recommendService.recommendByVoice(
+                voiceText, sceneImage, principal.getUserId());
+        return Result.success("语音推荐成功", result);
+    }
+
+    /**
      * 查看自己的推荐记录
      */
     @GetMapping("/history")
