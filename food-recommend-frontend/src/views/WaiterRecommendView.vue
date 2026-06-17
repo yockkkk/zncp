@@ -81,6 +81,37 @@
             <div class="pref-tags">
               <el-tag v-for="pref in result.userProfile?.possiblePreferences" :key="pref" size="small">{{ pref }}</el-tag>
             </div>
+
+            <!-- 多人模式各顾客偏好明细 -->
+            <div v-if="isMultiMode && result.userProfile?.guests && result.userProfile.guests.length > 0" class="guests-detail-section">
+              <div class="g-section-divider"></div>
+              <h4 class="g-section-title">👥 各顾客要求明细</h4>
+              <div class="g-detail-list">
+                <div v-for="guest in result.userProfile.guests" :key="guest.name" class="g-detail-item">
+                  <div class="g-name-row">
+                    <span class="g-name">👤 {{ guest.name }}</span>
+                  </div>
+                  <div class="g-tag-row">
+                    <el-tag v-if="guest.tastes && guest.tastes.length" size="small" type="warning" class="g-tag">
+                      喜欢: {{ guest.tastes.join('、') }}
+                    </el-tag>
+                    <el-tag v-if="guest.avoidIngredients && guest.avoidIngredients.length" size="small" type="danger" class="g-tag">
+                      忌口: {{ guest.avoidIngredients.join('、') }}
+                    </el-tag>
+                    <el-tag v-if="guest.allergens && guest.allergens.length" size="small" type="danger" class="g-tag">
+                      过敏: {{ guest.allergens.join('、') }}
+                    </el-tag>
+                    <el-tag v-if="guest.diseases && guest.diseases.length" size="small" type="danger" class="g-tag">
+                      禁忌: {{ guest.diseases.join('、') }}
+                    </el-tag>
+                    <el-tag v-if="guest.dietLifestyles && guest.dietLifestyles.length" size="small" type="primary" class="g-tag">
+                      习惯: {{ guest.dietLifestyles.join('、') }}
+                    </el-tag>
+                    <span v-if="!guest.tastes?.length && !guest.avoidIngredients?.length && !guest.allergens?.length && !guest.diseases?.length && !guest.dietLifestyles?.length" class="g-no-req">无特殊要求</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </el-card>
 
           <!-- 话术 -->
@@ -88,7 +119,14 @@
 
           <!-- 推荐菜品 -->
           <el-card class="section-card" shadow="never">
-            <template #header>⭐ 推荐菜品</template>
+            <template #header>
+              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span>⭐ 推荐菜品</span>
+                <el-tag :type="isMultiMode ? 'success' : 'primary'" effect="dark" size="small">
+                  {{ isMultiMode ? '多人配菜模式' : '常规推荐模式' }}
+                </el-tag>
+              </div>
+            </template>
             <div v-for="dish in result.recommendations" :key="dish.dishId" class="dish-row">
               <div class="dish-rank">
                 <span v-if="dish.rank === 1">🥇</span>
@@ -105,7 +143,7 @@
                   <el-tag type="warning" size="small">¥{{ dish.price }}</el-tag>
                   <el-tag size="small">{{ dish.calories }}kcal</el-tag>
                   <el-tag type="success" size="small">蛋白{{ dish.protein }}g</el-tag>
-                  <el-tag v-if="dish.suitableFor && dish.suitableFor.length" type="danger" size="small" effect="dark">
+                  <el-tag v-if="isMultiMode && dish.suitableFor && dish.suitableFor.length" type="danger" size="small" effect="dark">
                     适合: {{ dish.suitableFor.join('、') }}
                   </el-tag>
                 </div>
@@ -150,13 +188,17 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Camera, MagicStick, Loading, Close } from '@element-plus/icons-vue'
 import TagPanel from '../components/TagPanel.vue'
 import api from '../api'
 
 const tagPanelRef = ref(null)
+
+const isMultiMode = computed(() => {
+  return !!(result.value?.userProfile?.guests && result.value.userProfile.guests.length > 0)
+})
 const fileInput = ref(null)
 const file = ref(null)
 const previewUrl = ref('')
@@ -353,5 +395,49 @@ async function adoptDish(dishId) {
 }
 .result-actions .action-hint {
   font-size: 12px; color: #909399;
+}
+.guests-detail-section {
+  margin-top: 16px;
+}
+.g-section-divider {
+  border-top: 1px dashed #ebeef5;
+  margin-bottom: 12px;
+}
+.g-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0 0 10px 0;
+}
+.g-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.g-detail-item {
+  background: #fcfdfe;
+  border: 1px solid #f0f2f5;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.g-name-row {
+  margin-bottom: 6px;
+}
+.g-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d3461;
+}
+.g-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.g-tag {
+  border-radius: 4px;
+}
+.g-no-req {
+  font-size: 12px;
+  color: #c0c4cc;
 }
 </style>

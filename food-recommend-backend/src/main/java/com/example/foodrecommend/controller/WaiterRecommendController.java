@@ -217,4 +217,36 @@ public class WaiterRecommendController {
 
         return Result.success(isAdopted ? "采纳成功，已扣减库存" : "反馈成功", null);
     }
+
+    /**
+     * 获取服务员自己的营业额
+     */
+    @GetMapping("/revenue")
+    public Result<Map<String, Object>> getMyRevenue(@AuthenticationPrincipal UserPrincipal principal) {
+        List<RecommendationFeedback> feedbacks = feedbackMapper.selectList(
+                new LambdaQueryWrapper<RecommendationFeedback>()
+                        .eq(RecommendationFeedback::getWaiterId, principal.getUserId())
+                        .isNotNull(RecommendationFeedback::getAdoptedDishId)
+        );
+        List<Dish> allDishes = dishService.listAll();
+        java.util.Map<Long, java.math.BigDecimal> dishPriceMap = new java.util.HashMap<>();
+        for (Dish d : allDishes) {
+            if (d.getId() != null && d.getPrice() != null) {
+                dishPriceMap.put(d.getId(), d.getPrice());
+            }
+        }
+
+        java.math.BigDecimal totalRevenue = java.math.BigDecimal.ZERO;
+        for (RecommendationFeedback fb : feedbacks) {
+            if (fb.getAdoptedDishId() == null) continue;
+            java.math.BigDecimal price = dishPriceMap.getOrDefault(fb.getAdoptedDishId(), java.math.BigDecimal.ZERO);
+            int qty = fb.getQuantity() != null ? fb.getQuantity() : 1;
+            totalRevenue = totalRevenue.add(price.multiply(java.math.BigDecimal.valueOf(qty)));
+        }
+
+        Map<String, Object> res = new java.util.HashMap<>();
+        res.put("waiterId", principal.getUserId());
+        res.put("revenue", totalRevenue);
+        return Result.success(res);
+    }
 }

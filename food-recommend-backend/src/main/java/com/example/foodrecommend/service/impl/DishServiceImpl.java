@@ -40,7 +40,9 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
         if (dish.getPrice() == null || dish.getPrice().compareTo(java.math.BigDecimal.ZERO) <= 0) {
             throw new BusinessException("菜品价格必须大于0");
         }
-        dish.setStatus(1);
+        if (dish.getStatus() == null) {
+            dish.setStatus(1);
+        }
         dish.setVectorStatus(0);
         save(dish);
         syncVector(dish);

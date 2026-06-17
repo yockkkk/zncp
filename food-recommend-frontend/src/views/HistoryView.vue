@@ -1,5 +1,25 @@
 <template>
   <div class="history-page">
+    <!-- 个人业绩看板 -->
+    <div class="performance-board">
+      <div class="p-card">
+        <span class="p-label">总推荐次数</span>
+        <span class="p-val">{{ records.length }} 次</span>
+      </div>
+      <div class="p-card">
+        <span class="p-label">推荐采纳次数</span>
+        <span class="p-val green">{{ totalAdopted }} 次</span>
+      </div>
+      <div class="p-card">
+        <span class="p-label">采纳转化率</span>
+        <span class="p-val blue">{{ adoptionRate }}%</span>
+      </div>
+      <div class="p-card revenue-card">
+        <span class="p-label">我的累计销售额</span>
+        <span class="p-val orange">¥{{ formatPrice(revenue) }}</span>
+      </div>
+    </div>
+
     <div class="toolbar">
       <span class="hint">最近 50 条推荐记录 · 点击行查看溯源详情</span>
       <el-button :icon="RefreshRight" @click="fetchHistory" :loading="loading">刷新</el-button>
@@ -69,6 +89,24 @@
               </el-descriptions>
             </div>
 
+            <div v-if="hasGuests(detail)" class="trace-section">
+              <h4 class="sec-title">各顾客明细</h4>
+              <div class="detail-guests-list" style="max-height: 250px; overflow-y: auto;">
+                <div v-for="guest in getGuestsList(detail)" :key="guest.name" class="detail-guest-item"
+                     style="background: #fafbfc; border: 1px solid #ebeef5; border-radius: 6px; padding: 10px; margin-bottom: 8px;">
+                  <div style="font-size: 13px; font-weight: 600; color: #1d3461; margin-bottom: 6px;">👤 {{ guest.name }}</div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                    <el-tag v-if="guest.tastes && guest.tastes.length" size="small" type="warning">喜欢: {{ guest.tastes.join('、') }}</el-tag>
+                    <el-tag v-if="guest.avoidIngredients && guest.avoidIngredients.length" size="small" type="danger">忌口: {{ guest.avoidIngredients.join('、') }}</el-tag>
+                    <el-tag v-if="guest.allergens && guest.allergens.length" size="small" type="danger">过敏: {{ guest.allergens.join('、') }}</el-tag>
+                    <el-tag v-if="guest.diseases && guest.diseases.length" size="small" type="danger">禁忌: {{ guest.diseases.join('、') }}</el-tag>
+                    <el-tag v-if="guest.dietLifestyles && guest.dietLifestyles.length" size="small" type="primary">习惯: {{ guest.dietLifestyles.join('、') }}</el-tag>
+                    <span v-if="!guest.tastes?.length && !guest.avoidIngredients?.length && !guest.allergens?.length && !guest.diseases?.length && !guest.dietLifestyles?.length" style="font-size: 12px; color: #c0c4cc;">无特殊要求</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="trace-section" v-if="detail.sceneImageUrl || detail.imageUrl">
               <h4 class="sec-title">场景照片</h4>
               <el-image :src="detail.sceneImageUrl || detail.imageUrl"
@@ -120,7 +158,7 @@
 </template>
 
 <script setup>
-import { ref, onActivated } from 'vue'
+import { ref, onActivated, computed } from 'vue'
 import { RefreshRight } from '@element-plus/icons-vue'
 import api from '../api'
 
@@ -128,14 +166,39 @@ const records = ref([])
 const loading = ref(false)
 const drawerVisible = ref(false)
 const detail = ref(null)
+const revenue = ref(0)
+
+const totalAdopted = computed(() => {
+  return records.value.filter(r => r.adopted === 1).length
+})
+
+const adoptionRate = computed(() => {
+  if (records.value.length === 0) return 0
+  return Math.round((totalAdopted.value / records.value.length) * 100)
+})
 
 async function fetchHistory() {
   loading.value = true
   try {
     const res = await api.get('/waiter/history')
     records.value = res.data || []
+    await fetchRevenue()
   } catch (e) { /* error handled by interceptor */
   } finally { loading.value = false }
+}
+
+async function fetchRevenue() {
+  try {
+    const res = await api.get('/waiter/revenue')
+    revenue.value = res.data.revenue || 0
+  } catch (e) {
+    console.error('获取个人营业额失败', e)
+  }
+}
+
+function formatPrice(val) {
+  if (val === undefined || val === null) return '0.00'
+  return parseFloat(val).toFixed(2)
 }
 
 async function openDetail(row) {
@@ -223,6 +286,24 @@ function formatJson(json) {
   } catch { return json || '-' }
 }
 
+function hasGuests(row) {
+  try {
+    const p = typeof row?.userProfileJson === 'string'
+      ? JSON.parse(row.userProfileJson)
+      : (row?.userProfileJson || {})
+    return Array.isArray(p.guests) && p.guests.length > 0
+  } catch { return false }
+}
+
+function getGuestsList(row) {
+  try {
+    const p = typeof row?.userProfileJson === 'string'
+      ? JSON.parse(row.userProfileJson)
+      : (row?.userProfileJson || {})
+    return p.guests || []
+  } catch { return [] }
+}
+
 onActivated(fetchHistory)
 </script>
 
@@ -258,4 +339,44 @@ onActivated(fetchHistory)
 .dd-extra {
   font-size: 12px; color: #909399;
 }
+.performance-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+@media (max-width: 768px) {
+  .performance-board {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.p-card {
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.p-card.revenue-card {
+  background: linear-gradient(135deg, #fffaf3 0%, #fff6e5 100%);
+  border: 1px solid #ffe8cc;
+}
+.p-label {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.p-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: #303133;
+}
+.p-val.green { color: #67c23a; }
+.p-val.blue { color: #409eff; }
+.p-val.orange { color: #e6a23c; }
 </style>

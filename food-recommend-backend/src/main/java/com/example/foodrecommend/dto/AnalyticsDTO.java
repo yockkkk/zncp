@@ -21,6 +21,9 @@ public class AnalyticsDTO {
     /** 在岗服务员数 */
     private Long activeWaiters;
 
+    /** 总销售额（流水） */
+    private java.math.BigDecimal totalRevenue;
+
     /** 采纳率趋势 */
     private List<TrendPoint> adoptionTrend;
 
@@ -52,5 +55,7 @@ public class AnalyticsDTO {
         private Long totalRecs;
         private Long adoptedCount;
         private Double adoptionRate;
+        /** 营业额 */
+        private java.math.BigDecimal revenue;
     }
 }

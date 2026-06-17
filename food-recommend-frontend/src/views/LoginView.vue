@@ -13,10 +13,10 @@
             <line x1="50" y1="55" x2="55" y2="65" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
           </svg>
         </div>
-        <h1 class="brand-title">智能餐饮推荐系统</h1>
+        <h1 class="brand-title">智味AI</h1>
         <p class="brand-desc">
-          基于多模态大模型与向量数据库<br/>
-          一张图片读懂顾客，一套算法精准推荐
+          基于多模态场景感知的智能餐饮个性化推荐系统<br/>
+          大模型多智能体协同，多模态特征融合匹配
         </p>
         <div class="brand-features">
           <div class="feature-item">

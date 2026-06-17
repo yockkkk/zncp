@@ -62,16 +62,43 @@ public class OwnerAnalyticsController {
                         .eq(User::getStatus, 1)
         );
 
+        // 计算流水与营业额统计
+        List<RecommendationFeedback> adoptedFeedbacks = feedbackMapper.selectList(
+                new LambdaQueryWrapper<RecommendationFeedback>()
+                        .isNotNull(RecommendationFeedback::getAdoptedDishId)
+        );
+        List<Dish> allDishes = dishMapper.selectList(null);
+        Map<Long, java.math.BigDecimal> dishPriceMap = allDishes.stream()
+                .filter(d -> d.getId() != null && d.getPrice() != null)
+                .collect(Collectors.toMap(Dish::getId, Dish::getPrice, (a, b) -> a));
+
+        java.math.BigDecimal totalRevenue = java.math.BigDecimal.ZERO;
+        Map<Long, java.math.BigDecimal> waiterRevenueMap = new HashMap<>();
+
+        for (RecommendationFeedback fb : adoptedFeedbacks) {
+            if (fb.getAdoptedDishId() == null) continue;
+            java.math.BigDecimal price = dishPriceMap.getOrDefault(fb.getAdoptedDishId(), java.math.BigDecimal.ZERO);
+            int qty = fb.getQuantity() != null ? fb.getQuantity() : 1;
+            java.math.BigDecimal itemRevenue = price.multiply(java.math.BigDecimal.valueOf(qty));
+            totalRevenue = totalRevenue.add(itemRevenue);
+
+            if (fb.getWaiterId() != null) {
+                waiterRevenueMap.put(fb.getWaiterId(),
+                        waiterRevenueMap.getOrDefault(fb.getWaiterId(), java.math.BigDecimal.ZERO).add(itemRevenue));
+            }
+        }
+
         AnalyticsDTO dto = new AnalyticsDTO();
         dto.setTotalRecommendations(totalRecs);
         dto.setAdoptionRate(adoptionRate);
         dto.setTotalDishes(totalDishes);
         dto.setActiveWaiters(activeWaiters);
+        dto.setTotalRevenue(totalRevenue);
 
         // 热门菜品
         dto.setTopDishes(computeTopDishes(allRecords));
         // 服务员表现
-        dto.setWaiterStats(computeWaiterStats(allRecords));
+        dto.setWaiterStats(computeWaiterStats(allRecords, waiterRevenueMap));
 
         return Result.success(dto);
     }
@@ -116,6 +143,25 @@ public class OwnerAnalyticsController {
 
         return Result.success(records);
     }
+
+    /**
+     * 获取推荐记录详情（附带反馈明细）
+     */
+    @GetMapping("/records/{id}")
+    public Result<RecommendationRecord> getRecordDetail(@PathVariable Long id) {
+        RecommendationRecord record = recordMapper.selectById(id);
+        if (record == null) {
+            throw new BusinessException("记录不存在");
+        }
+        List<RecommendationFeedback> feedbacks = feedbackMapper.selectList(
+                new LambdaQueryWrapper<RecommendationFeedback>()
+                        .eq(RecommendationFeedback::getRecordId, id)
+                        .orderByDesc(RecommendationFeedback::getCreateTime)
+        );
+        record.setFeedbacks(feedbacks);
+        return Result.success(record);
+    }
+
 
     /**
      * 员工管理：列表
@@ -209,7 +255,7 @@ public class OwnerAnalyticsController {
                 .collect(Collectors.toList());
     }
 
-    private List<AnalyticsDTO.WaiterStat> computeWaiterStats(List<RecommendationRecord> records) {
+    private List<AnalyticsDTO.WaiterStat> computeWaiterStats(List<RecommendationRecord> records, Map<Long, java.math.BigDecimal> waiterRevenueMap) {
         Map<Long, long[]> waiterStats = new HashMap<>(); // waiterId -> [total, adopted]
 
         for (RecommendationRecord r : records) {
@@ -232,6 +278,7 @@ public class OwnerAnalyticsController {
                     stat.setAdoptedCount(e.getValue()[1]);
                     stat.setAdoptionRate(e.getValue()[0] > 0 ?
                             Math.round(e.getValue()[1] * 10000.0 / e.getValue()[0]) / 100.0 : 0.0);
+                    stat.setRevenue(waiterRevenueMap.getOrDefault(e.getKey(), java.math.BigDecimal.ZERO));
                     return stat;
                 })
                 .collect(Collectors.toList());

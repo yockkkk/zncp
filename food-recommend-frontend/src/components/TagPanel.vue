@@ -373,20 +373,42 @@ watch(() => selected.guests.length, (newVal) => {
 watch(() => selected.mode, (newVal) => {
   if (newVal === 'multi') {
     selected.peopleCount = selected.guests.length > 0 ? String(selected.guests.length) : null
-  } else {
-    selected.peopleCount = null
   }
 })
 
 function handleModeChange(mode) {
   if (mode === 'multi') {
-    if (selected.guests.length === 0) {
-      addGuest()
-      addGuest() // default to 2 guests
+    // Convert Single people count selection -> Multi guests count
+    let targetCount = 2;
+    if (selected.peopleCount === '1') targetCount = 1;
+    else if (selected.peopleCount === '2') targetCount = 2;
+    else if (selected.peopleCount === '3-4') targetCount = 3;
+    else if (selected.peopleCount === '5+') targetCount = 5;
+
+    selected.guests = []
+    for (let i = 0; i < targetCount; i++) {
+      const nextLetter = String.fromCharCode(65 + i)
+      selected.guests.push({
+        name: `顾客${nextLetter}`,
+        avoidIngredients: [],
+        allergens: [],
+        diseases: [],
+        dietLifestyles: [],
+        tastes: []
+      })
     }
+    activeGuestNames.value = ['0']
     selected.phone = ''
     historyProfile.value = null
   } else {
+    // Convert Multi guests count -> Single people count tag
+    const count = selected.guests.length;
+    if (count === 1) selected.peopleCount = '1';
+    else if (count === 2) selected.peopleCount = '2';
+    else if (count >= 3 && count <= 4) selected.peopleCount = '3-4';
+    else if (count >= 5) selected.peopleCount = '5+';
+    else selected.peopleCount = null;
+
     selected.guests = []
   }
 }

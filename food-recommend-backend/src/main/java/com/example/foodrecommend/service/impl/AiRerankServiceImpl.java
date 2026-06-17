@@ -155,15 +155,30 @@ public class AiRerankServiceImpl implements AiRerankService {
 
                 String jsonStr = extractJson(content);
                 log.info("Extracted jsonStr to parse: {}", jsonStr);
-                JsonNode resultNode = objectMapper.readTree(jsonStr);
+                List<RecommendDishDTO> results;
+                String summary;
 
-                String summary = resultNode.path("summary").asText("");
-
-                JsonNode recommendationsNode = resultNode.path("recommendations");
-                List<RecommendDishDTO> results = objectMapper.readValue(
-                        recommendationsNode.toString(),
-                        new TypeReference<List<RecommendDishDTO>>() {}
-                );
+                try {
+                    JsonNode resultNode = objectMapper.readTree(jsonStr);
+                    summary = resultNode.path("summary").asText("");
+                    JsonNode recommendationsNode = resultNode.path("recommendations");
+                    results = objectMapper.readValue(
+                            recommendationsNode.toString(),
+                            new TypeReference<List<RecommendDishDTO>>() {}
+                    );
+                } catch (Exception parseEx) {
+                    log.warn("JSON完整解析失败，尝试截断恢复: {}", parseEx.getMessage());
+                    // 尝试从截断的JSON中恢复已解析的菜品
+                    String repaired = repairTruncatedJson(jsonStr);
+                    JsonNode resultNode = objectMapper.readTree(repaired);
+                    summary = resultNode.path("summary").asText("");
+                    JsonNode recommendationsNode = resultNode.path("recommendations");
+                    results = objectMapper.readValue(
+                            recommendationsNode.toString(),
+                            new TypeReference<List<RecommendDishDTO>>() {}
+                    );
+                    log.info("截断恢复成功，解析出 {} 条推荐", results.size());
+                }
 
                 Map<Long, Dish> dishMap = new HashMap<>();
                 for (Dish dish : candidateDishes) {
@@ -192,6 +207,46 @@ public class AiRerankServiceImpl implements AiRerankService {
             log.error("重排序模型调用异常", e);
             throw new BusinessException("菜品重排序失败: " + e.getMessage());
         }
+    }
+
+    /** 尝试修复被截断的JSON：补全缺失的 } ] " 等 */
+    private String repairTruncatedJson(String json) {
+        StringBuilder sb = new StringBuilder(json);
+        int braceDepth = 0;
+        int bracketDepth = 0;
+        boolean inString = false;
+        for (int i = 0; i < sb.length(); i++) {
+            char c = sb.charAt(i);
+            if (c == '"' && (i == 0 || sb.charAt(i - 1) != '\\')) inString = !inString;
+            if (!inString) {
+                if (c == '{') braceDepth++;
+                else if (c == '}') braceDepth--;
+                else if (c == '[') bracketDepth++;
+                else if (c == ']') bracketDepth--;
+            }
+        }
+        // 去掉末尾未闭合的部分，补全括号
+        while (sb.length() > 0 && braceDepth > 0 || bracketDepth > 0) {
+            int lastComma = sb.lastIndexOf(",");
+            if (lastComma > 0) {
+                sb.setLength(lastComma);
+                // 重新计算深度
+                braceDepth = 0; bracketDepth = 0; inString = false;
+                for (int i = 0; i < sb.length(); i++) {
+                    char c = sb.charAt(i);
+                    if (c == '"' && (i == 0 || sb.charAt(i - 1) != '\\')) inString = !inString;
+                    if (!inString) {
+                        if (c == '{') braceDepth++;
+                        else if (c == '}') braceDepth--;
+                        else if (c == '[') bracketDepth++;
+                        else if (c == ']') bracketDepth--;
+                    }
+                }
+            } else break;
+        }
+        while (braceDepth-- > 0) sb.append('}');
+        while (bracketDepth-- > 0) sb.append(']');
+        return sb.toString();
     }
 
     private String extractJson(String text) {

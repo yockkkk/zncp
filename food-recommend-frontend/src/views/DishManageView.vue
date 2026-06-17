@@ -28,11 +28,22 @@
       </el-table-column>
       <el-table-column prop="taste" label="口味" width="80" />
       <el-table-column prop="sales" label="销量" width="70" />
+      <el-table-column prop="stock" label="库存" width="70" />
       <el-table-column label="向量" width="80">
         <template #default="{ row }">
           <el-tag :type="row.vectorStatus === 1 ? 'success' : 'info'" size="small">
             {{ row.vectorStatus === 1 ? '已生成' : '未生成' }}
           </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="上架状态" width="100">
+        <template #default="{ row }">
+          <el-switch
+            v-model="row.status"
+            :active-value="1"
+            :inactive-value="0"
+            @change="(val) => handleStatusChange(row, val)"
+          />
         </template>
       </el-table-column>
       <el-table-column prop="description" label="描述" min-width="160" show-overflow-tooltip />
@@ -79,6 +90,18 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="销量"><el-input-number v-model="form.sales" :min="0" style="width:100%" /></el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="上架状态">
+              <el-switch v-model="form.status" :active-value="1" :inactive-value="0" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="库存">
+              <el-input-number v-model="form.stock" :min="0" style="width:100%" />
+            </el-form-item>
           </el-col>
         </el-row>
         <el-form-item label="口味"><el-input v-model="form.taste" /></el-form-item>
@@ -133,7 +156,7 @@ async function fetchDishes() {
 
 function openAdd() {
   editingId.value = null
-  form.value = { price: 0, calories: 0, protein: 0, fat: 0, carbohydrate: 0, sales: 0 }
+  form.value = { price: 0, calories: 0, protein: 0, fat: 0, carbohydrate: 0, sales: 0, stock: 99, status: 1 }
   dialogVisible.value = true
 }
 
@@ -158,6 +181,16 @@ async function doSave() {
   } catch (e) {
     ElMessage.error(e.message || '保存失败')
   } finally { saving.value = false }
+}
+
+async function handleStatusChange(row, val) {
+  try {
+    await api.put('/admin/dish/' + row.id, { status: val })
+    ElMessage.success(val === 1 ? '上架成功' : '已下架')
+  } catch (e) {
+    ElMessage.error(e.message || '操作失败')
+    row.status = val === 1 ? 0 : 1 // revert status on UI if request fails
+  }
 }
 
 async function doDelete(id) {
