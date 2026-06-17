@@ -17,4 +17,5 @@ public class RecommendDishDTO {
     private String nutritionComment;
     private String costPerformanceComment;
     private String imageUrl;
+    private java.util.List<String> suitableFor;
 }

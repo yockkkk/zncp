@@ -35,8 +35,8 @@ public class HttpClientConfig {
     public OkHttpClient okHttpClient() {
         OkHttpClient.Builder builder = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(120, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(300, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
                 .connectionPool(new ConnectionPool(10, 5, TimeUnit.MINUTES))
                 .retryOnConnectionFailure(true);
 

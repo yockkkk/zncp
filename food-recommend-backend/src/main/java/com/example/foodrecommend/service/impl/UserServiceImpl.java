@@ -132,6 +132,15 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User createWaiter(String username, String password, String realName, String phone) {
+        if (username == null || username.trim().isEmpty()) {
+            throw new BusinessException("用户名不能为空");
+        }
+        if (password == null || password.length() < 6) {
+            throw new BusinessException("密码长度不能少于6位");
+        }
+        if (password.length() > 64) {
+            throw new BusinessException("密码长度不能超过64位");
+        }
         // 检查用户名是否已存在
         User existing = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getUsername, username)

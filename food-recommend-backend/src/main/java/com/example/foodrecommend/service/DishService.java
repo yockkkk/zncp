@@ -15,5 +15,11 @@ public interface DishService extends IService<Dish> {
 
     void deleteDish(Long id);
 
+    /** 查询可推荐菜品（上架 + 有库存 + 向量已生成） */
+    List<Dish> listAvailable();
+
+    /** 扣减库存（采纳时调用），返回扣减后库存 */
+    int deductStock(Long id, int quantity);
+
     String buildDishEmbeddingText(Dish dish);
 }

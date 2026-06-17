@@ -4,7 +4,6 @@ import com.example.foodrecommend.common.BusinessException;
 import com.example.foodrecommend.dto.*;
 import com.example.foodrecommend.entity.Dish;
 import com.example.foodrecommend.entity.RecommendationRecord;
-import com.example.foodrecommend.mapper.DishMapper;
 import com.example.foodrecommend.mapper.RecommendationRecordMapper;
 import com.example.foodrecommend.service.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,7 +26,6 @@ public class RecommendServiceImpl implements RecommendService {
     private final VectorSearchService vectorSearchService;
     private final AiRerankService aiRerankService;
     private final DishService dishService;
-    private final DishMapper dishMapper;
     private final RecommendationRecordMapper recordMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -53,8 +51,8 @@ public class RecommendServiceImpl implements RecommendService {
 
         RerankResultDTO rerankResult = aiRerankService.rerank(profile, filteredDishes);
 
-        Long recordId = saveRecommendationRecord(userId, imageUrl, null, null,
-                profile, queryText, rerankResult.getRecommendations(), null);
+        Long recordId = saveRecommendationRecord(userId, null, imageUrl, null, null,
+                profile, queryText, rerankResult.getRecommendations(), (ScriptResultDTO) null);
 
         RecommendResultDTO result = new RecommendResultDTO();
         result.setRecordId(recordId);
@@ -81,7 +79,6 @@ public class RecommendServiceImpl implements RecommendService {
     public RecommendWithScriptDTO recommendByVoice(String voiceText,
                                                     MultipartFile sceneImage,
                                                     Long waiterId) {
-        // === Agent 0: 语音理解 ===
         TagInputDTO tags = voiceUnderstandingService.parseVoiceText(voiceText);
         if (tags == null) {
             throw new BusinessException("语音理解失败，请重试或使用标签面板");
@@ -96,7 +93,6 @@ public class RecommendServiceImpl implements RecommendService {
                                                          MultipartFile sceneImage,
                                                          Long waiterId,
                                                          String tagInputJson) {
-        // === Agent 1: 场景感知 ===
         String sceneImageUrl = null;
         SceneContextDTO sceneContext = null;
         if (sceneImage != null && !sceneImage.isEmpty()) {
@@ -104,28 +100,22 @@ public class RecommendServiceImpl implements RecommendService {
             sceneContext = scenePerceptionService.analyzeScene(sceneImageUrl);
         }
 
-        // === Agent 2: 用户画像构建 ===
         UserProfileDTO profile = userProfileService.buildProfile(tags, sceneContext);
         String queryText = userProfileService.buildQueryText(profile);
 
-        // === Agent 3: 菜品匹配 ===
         List<Dish> candidateDishes = dishMatchingService.matchDishes(queryText, profile, 20);
 
-        // === Agent 4: 推荐排序 ===
         RerankResultDTO rerankResult = recommendationRankingService.rank(profile, candidateDishes);
 
-        // === Agent 5: 话术生成 ===
         ScriptResultDTO scriptResult = scriptGenerationService.generateScripts(
                 profile, rerankResult.getRecommendations());
 
-        // === 保存记录 ===
-        Long recordId = saveRecommendationRecord(null, sceneImageUrl,
+        Long recordId = saveRecommendationRecord(null, tags.getPhone(), sceneImageUrl,
                 waiterId, tagInputJson,
                 profile, queryText,
                 rerankResult.getRecommendations(),
-                scriptResult != null ? scriptResult.getDishScripts() : null);
+                scriptResult);
 
-        // === 组装结果 ===
         RecommendWithScriptDTO result = new RecommendWithScriptDTO();
         result.setRecordId(recordId);
         result.setUserProfile(profile);
@@ -199,18 +189,20 @@ public class RecommendServiceImpl implements RecommendService {
         payload.setTags(splitToList(dish.getTags()));
         payload.setSuitablePeople(splitToList(dish.getSuitablePeople()));
         payload.setScene(splitToList(dish.getScene()));
+        payload.setGrossMargin(dish.getGrossMargin() != null ? dish.getGrossMargin().doubleValue() : 0.60);
 
         vectorSearchService.upsertDishVector(dish.getId(), vector, payload);
     }
 
-    private Long saveRecommendationRecord(Long userId, String imageUrl,
+    private Long saveRecommendationRecord(Long userId, String phone, String imageUrl,
                                            Long waiterId, String tagInputJson,
                                            UserProfileDTO profile, String queryText,
                                            List<RecommendDishDTO> results,
-                                           List<DishScriptDTO> dishScripts) {
+                                           ScriptResultDTO scriptResult) {
         try {
             RecommendationRecord record = new RecommendationRecord();
             record.setUserId(userId);
+            record.setPhone(phone);
             record.setWaiterId(waiterId);
             record.setImageUrl(imageUrl);
             record.setTagInputJson(tagInputJson);
@@ -224,15 +216,15 @@ public class RecommendServiceImpl implements RecommendService {
             record.setRecommendedDishIds(dishIds);
             record.setResultJson(objectMapper.writeValueAsString(results));
 
-            if (dishScripts != null && !dishScripts.isEmpty()) {
-                record.setScriptResultJson(objectMapper.writeValueAsString(dishScripts));
+            if (scriptResult != null) {
+                record.setScriptResultJson(objectMapper.writeValueAsString(scriptResult));
             }
 
             recordMapper.insert(record);
             return record.getId();
         } catch (Exception e) {
             log.error("保存推荐记录失败", e);
-            return null;
+            throw new BusinessException("保存推荐记录失败: " + e.getMessage());
         }
     }
 

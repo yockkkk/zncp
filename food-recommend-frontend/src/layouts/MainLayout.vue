@@ -3,7 +3,7 @@
     <el-aside width="220px" class="sidebar">
       <div class="logo">
         <el-icon :size="28"><DishDot /></el-icon>
-        <span>智能餐饮推荐</span>
+        <span>智味AI</span>
       </div>
 
       <!-- 服务员菜单 -->
@@ -66,7 +66,11 @@
         </div>
       </el-header>
       <el-main class="main-content">
-        <router-view />
+        <router-view v-slot="{ Component }">
+          <keep-alive>
+            <component :is="Component" />
+          </keep-alive>
+        </router-view>
       </el-main>
     </el-container>
   </el-container>

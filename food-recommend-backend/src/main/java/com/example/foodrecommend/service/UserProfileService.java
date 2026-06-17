@@ -19,4 +19,9 @@ public interface UserProfileService {
      * 根据用户画像构建向量检索查询文本
      */
     String buildQueryText(UserProfileDTO profile);
+
+    /**
+     * 根据手机号获取顾客的历史口味偏好画像和常点菜品（长期记忆）
+     */
+    UserProfileDTO getCustomerHistoryProfile(String phone);
 }

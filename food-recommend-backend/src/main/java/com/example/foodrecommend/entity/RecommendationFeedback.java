@@ -18,6 +18,7 @@ public class RecommendationFeedback {
     private Long recordId;
     private Long waiterId;
     private Long adoptedDishId;
+    private Integer quantity;
     private Integer rating;
     private String note;
     private LocalDateTime createTime;

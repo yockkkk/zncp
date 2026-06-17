@@ -12,5 +12,23 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  build: {
+    chunkSizeWarningLimit: 1200,
+    rolldownOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('element-plus')) {
+              return 'element-plus';
+            }
+            if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router') || id.includes('axios')) {
+              return 'vue-vendor';
+            }
+            return 'vendor';
+          }
+        }
+      }
+    }
   }
 })

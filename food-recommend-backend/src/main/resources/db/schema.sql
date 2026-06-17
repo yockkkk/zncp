@@ -1,6 +1,13 @@
 CREATE DATABASE IF NOT EXISTS food_recommend DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE food_recommend;
 
+DROP TABLE IF EXISTS recommendation_feedback;
+DROP TABLE IF EXISTS customer_profile;
+DROP TABLE IF EXISTS prompt_template;
+DROP TABLE IF EXISTS recommendation_record;
+DROP TABLE IF EXISTS sys_user;
+DROP TABLE IF EXISTS dish;
+
 CREATE TABLE IF NOT EXISTS dish (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '菜品ID',
     name VARCHAR(100) NOT NULL COMMENT '菜品名称',
@@ -20,6 +27,7 @@ CREATE TABLE IF NOT EXISTS dish (
     stock INT DEFAULT 999 COMMENT '库存',
     status TINYINT DEFAULT 1 COMMENT '状态：1上架，0下架',
     vector_status TINYINT DEFAULT 0 COMMENT '向量状态：0未生成，1已生成',
+    gross_margin DECIMAL(5,2) DEFAULT 0.60 COMMENT '毛利率',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) COMMENT='菜品表';
@@ -27,6 +35,7 @@ CREATE TABLE IF NOT EXISTS dish (
 CREATE TABLE IF NOT EXISTS recommendation_record (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '推荐记录ID',
     user_id BIGINT COMMENT '用户ID，可为空',
+    phone VARCHAR(20) DEFAULT NULL COMMENT '顾客手机号',
     waiter_id BIGINT COMMENT '发起推荐的服务员ID',
     image_url VARCHAR(500) COMMENT '用户上传图片地址',
     video_url VARCHAR(500) COMMENT '用户上传视频地址',
@@ -39,6 +48,7 @@ CREATE TABLE IF NOT EXISTS recommendation_record (
     script_result_json TEXT COMMENT '话术生成结果JSON',
     adopted TINYINT DEFAULT 0 COMMENT '是否被采纳：1是，0否',
     adopted_dish_id BIGINT COMMENT '被采纳的具体菜品ID',
+    adopted_quantity INT DEFAULT 1 COMMENT '采纳数量',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP
 ) COMMENT='推荐记录表';
 
@@ -87,6 +97,7 @@ CREATE TABLE IF NOT EXISTS recommendation_feedback (
     record_id BIGINT NOT NULL COMMENT '推荐记录ID',
     waiter_id BIGINT NOT NULL COMMENT '服务员ID',
     adopted_dish_id BIGINT COMMENT '被采纳菜品ID',
+    quantity INT DEFAULT 1 COMMENT '采纳数量',
     rating TINYINT COMMENT '1-5星评分',
     note VARCHAR(500) COMMENT '反馈备注',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP,

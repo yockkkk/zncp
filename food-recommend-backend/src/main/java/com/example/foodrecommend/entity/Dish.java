@@ -30,6 +30,7 @@ public class Dish {
     private Integer stock;
     private Integer status;
     private Integer vectorStatus;
+    private java.math.BigDecimal grossMargin;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

@@ -19,9 +19,14 @@
             </div>
           </div>
         </el-card>
-        <el-button type="primary" size="large" :loading="loading" class="recommend-btn" @click="startRecommend">
-          <el-icon><MagicStick /></el-icon> 生成推荐
-        </el-button>
+        <div class="btn-group">
+          <el-button type="primary" size="large" :loading="loading" class="recommend-btn" @click="startRecommend">
+            <el-icon><MagicStick /></el-icon> 生成推荐
+          </el-button>
+          <el-button v-if="loading" type="danger" size="large" class="stop-btn" @click="stopRecommend">
+            <el-icon><Close /></el-icon> 停止
+          </el-button>
+        </div>
       </div>
 
       <!-- 右侧：结果展示 -->
@@ -31,7 +36,11 @@
 
         <!-- 加载中 -->
         <div v-if="loading" class="loading-box">
-          <el-skeleton :rows="8" animated />
+          <div class="loading-spin">
+            <el-icon :size="40" class="spin-icon"><Loading /></el-icon>
+            <p class="loading-text">AI 正在分析推荐中...</p>
+            <p class="loading-sub">多模型协同工作，预计需要10-30秒</p>
+          </div>
         </div>
 
         <!-- 结果 -->
@@ -65,8 +74,43 @@
               <div class="profile-item"><span class="p-label">消费力</span><span>{{ result.userProfile?.estimatedConsumptionLevel || '-' }}</span></div>
               <div class="profile-item"><span class="p-label">健康目标</span><span>{{ result.userProfile?.healthGoal || '-' }}</span></div>
             </div>
+            <div v-if="result.userProfile?.phone" class="history-profile-info">
+              <div class="h-info-item"><span class="h-label">📱 手机号</span><span>{{ result.userProfile.phone }}</span></div>
+              <div class="h-info-item"><span class="h-label">🧠 长期记忆</span><span class="h-desc-text">{{ result.userProfile.historyDescription }}</span></div>
+            </div>
             <div class="pref-tags">
               <el-tag v-for="pref in result.userProfile?.possiblePreferences" :key="pref" size="small">{{ pref }}</el-tag>
+            </div>
+
+            <!-- 多人模式各顾客偏好明细 -->
+            <div v-if="isMultiMode && result.userProfile?.guests && result.userProfile.guests.length > 0" class="guests-detail-section">
+              <div class="g-section-divider"></div>
+              <h4 class="g-section-title">👥 各顾客要求明细</h4>
+              <div class="g-detail-list">
+                <div v-for="guest in result.userProfile.guests" :key="guest.name" class="g-detail-item">
+                  <div class="g-name-row">
+                    <span class="g-name">👤 {{ guest.name }}</span>
+                  </div>
+                  <div class="g-tag-row">
+                    <el-tag v-if="guest.tastes && guest.tastes.length" size="small" type="warning" class="g-tag">
+                      喜欢: {{ guest.tastes.join('、') }}
+                    </el-tag>
+                    <el-tag v-if="guest.avoidIngredients && guest.avoidIngredients.length" size="small" type="danger" class="g-tag">
+                      忌口: {{ guest.avoidIngredients.join('、') }}
+                    </el-tag>
+                    <el-tag v-if="guest.allergens && guest.allergens.length" size="small" type="danger" class="g-tag">
+                      过敏: {{ guest.allergens.join('、') }}
+                    </el-tag>
+                    <el-tag v-if="guest.diseases && guest.diseases.length" size="small" type="danger" class="g-tag">
+                      禁忌: {{ guest.diseases.join('、') }}
+                    </el-tag>
+                    <el-tag v-if="guest.dietLifestyles && guest.dietLifestyles.length" size="small" type="primary" class="g-tag">
+                      习惯: {{ guest.dietLifestyles.join('、') }}
+                    </el-tag>
+                    <span v-if="!guest.tastes?.length && !guest.avoidIngredients?.length && !guest.allergens?.length && !guest.diseases?.length && !guest.dietLifestyles?.length" class="g-no-req">无特殊要求</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </el-card>
 
@@ -75,7 +119,14 @@
 
           <!-- 推荐菜品 -->
           <el-card class="section-card" shadow="never">
-            <template #header>⭐ 推荐菜品</template>
+            <template #header>
+              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span>⭐ 推荐菜品</span>
+                <el-tag :type="isMultiMode ? 'success' : 'primary'" effect="dark" size="small">
+                  {{ isMultiMode ? '多人配菜模式' : '常规推荐模式' }}
+                </el-tag>
+              </div>
+            </template>
             <div v-for="dish in result.recommendations" :key="dish.dishId" class="dish-row">
               <div class="dish-rank">
                 <span v-if="dish.rank === 1">🥇</span>
@@ -92,6 +143,9 @@
                   <el-tag type="warning" size="small">¥{{ dish.price }}</el-tag>
                   <el-tag size="small">{{ dish.calories }}kcal</el-tag>
                   <el-tag type="success" size="small">蛋白{{ dish.protein }}g</el-tag>
+                  <el-tag v-if="isMultiMode && dish.suitableFor && dish.suitableFor.length" type="danger" size="small" effect="dark">
+                    适合: {{ dish.suitableFor.join('、') }}
+                  </el-tag>
                 </div>
                 <div class="dish-reasons">
                   <p><b>推荐理由：</b>{{ dish.reason }}</p>
@@ -103,16 +157,30 @@
                   <span class="script-label">💬 推荐话术：</span>
                   <span class="script-text">{{ getDishScript(dish.dishId) }}</span>
                 </div>
-                <!-- 采纳按钮 -->
+                <!-- 采纳按钮 + 份数 -->
                 <div class="dish-action">
-                  <el-button type="success" size="small" :disabled="adoptedDishes.has(dish.dishId)"
-                    @click="adoptDish(dish.dishId)">
-                    {{ adoptedDishes.has(dish.dishId) ? '已采纳' : '顾客选了这道 ✓' }}
-                  </el-button>
+                  <template v-if="adoptedDishes.has(dish.dishId)">
+                    <el-tag type="success" size="small">已采纳 {{ adoptedDishes.get(dish.dishId) }} 份</el-tag>
+                  </template>
+                  <template v-else>
+                    <span class="qty-label">份数</span>
+                    <el-input-number v-model="adoptQtys[dish.dishId]" :min="1" :max="99" size="small" style="width:90px" />
+                    <el-button type="success" size="small" @click="adoptDish(dish.dishId)">
+                      顾客选了这道 ✓
+                    </el-button>
+                  </template>
                 </div>
               </div>
             </div>
           </el-card>
+
+          <!-- 操作区 -->
+          <div class="result-actions">
+            <el-button type="primary" size="large" @click="resetAll">
+              <el-icon><MagicStick /></el-icon> 开始下一次推荐
+            </el-button>
+            <span class="action-hint">本次推荐已写入记录，可在「我的记录」中查看</span>
+          </div>
         </template>
       </div>
     </div>
@@ -120,20 +188,26 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Camera, MagicStick } from '@element-plus/icons-vue'
+import { Camera, MagicStick, Loading, Close } from '@element-plus/icons-vue'
 import TagPanel from '../components/TagPanel.vue'
 import api from '../api'
 
 const tagPanelRef = ref(null)
+
+const isMultiMode = computed(() => {
+  return !!(result.value?.userProfile?.guests && result.value.userProfile.guests.length > 0)
+})
 const fileInput = ref(null)
 const file = ref(null)
 const previewUrl = ref('')
 const loading = ref(false)
 const result = ref(null)
 const recordId = ref(null)
-const adoptedDishes = ref(new Set())
+const adoptedDishes = ref(new Map())   // dishId → quantity
+const adoptQtys = reactive({})          // dishId → 当前选择的份数(默认1)
+const abortController = ref(null)
 
 function onFilePicked(e) {
   const f = e.target.files?.[0]
@@ -157,13 +231,14 @@ function getDishScript(dishId) {
 
 async function startRecommend() {
   const tags = tagPanelRef.value?.selected
-  if (!tags || (!tags.peopleCount && !tags.diningScene && !tags.mealTime)) {
-    ElMessage.warning('请至少选择人数、场景或时段')
-    return
-  }
+  if (!tags) return
+  if (!tags.peopleCount) { ElMessage.warning('请选择用餐人数'); return }
+  if (!tags.diningScene) { ElMessage.warning('请选择用餐场景'); return }
+  if (!tags.mealTime) { ElMessage.warning('请选择用餐时段'); return }
 
   loading.value = true
   result.value = null
+  abortController.value = new AbortController()
 
   try {
     const fd = new FormData()
@@ -173,30 +248,56 @@ async function startRecommend() {
     }
 
     const res = await api.post('/waiter/recommend', fd, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 'Content-Type': 'multipart/form-data' },
+      signal: abortController.value.signal
     })
 
     result.value = res.data
     recordId.value = res.data.recordId
-    adoptedDishes.value = new Set()
+    adoptedDishes.value = new Map()
+    Object.keys(adoptQtys).forEach(k => delete adoptQtys[k])
     ElMessage.success('推荐生成成功！')
   } catch (e) {
-    // error handled by interceptor
+    if (e.name === 'AbortError' || e.code === 'ERR_CANCELED') {
+      ElMessage.info('已停止推荐')
+    }
+    // other errors handled by interceptor
   } finally {
     loading.value = false
+    abortController.value = null
   }
+}
+
+function stopRecommend() {
+  if (abortController.value) {
+    abortController.value.abort()
+    abortController.value = null
+    loading.value = false
+    ElMessage.info('已停止推荐')
+  }
+}
+
+function resetAll() {
+  result.value = null
+  recordId.value = null
+  adoptedDishes.value = new Map()
+  Object.keys(adoptQtys).forEach(k => delete adoptQtys[k])
+  tagPanelRef.value?.reset()
+  clearPhoto()
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 async function adoptDish(dishId) {
   if (!recordId.value) return
+  const qty = adoptQtys[dishId] || 1
   try {
     await api.post(`/waiter/feedback/${recordId.value}`, {
       adopted: true,
       adoptedDishId: dishId,
-      rating: 5
+      quantity: qty
     })
-    adoptedDishes.value.add(dishId)
-    ElMessage.success('已记录顾客选择了这道菜！')
+    adoptedDishes.value.set(dishId, qty)
+    ElMessage.success(`已采纳 × ${qty} 份`)
   } catch (e) {
     // error handled by interceptor
   }
@@ -228,10 +329,17 @@ async function adoptDish(dishId) {
 .preview-box { text-align: center; }
 .preview-box img { max-width: 100%; max-height: 200px; border-radius: 8px; margin-bottom: 8px; }
 
-.recommend-btn { width: 100%; height: 48px; font-size: 16px; margin-top: 8px; }
+.btn-group { display: flex; gap: 8px; margin-top: 8px; }
+.recommend-btn { flex: 1; height: 48px; font-size: 16px; }
+.stop-btn { width: 80px; height: 48px; font-size: 14px; }
 
 .right-panel { min-height: 400px; }
-.loading-box { padding: 24px; background: #fff; border-radius: 8px; }
+.loading-box { padding: 48px 24px; background: #fff; border-radius: 8px; text-align: center; }
+.loading-spin { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.loading-text { font-size: 15px; color: #303133; margin: 0; font-weight: 500; }
+.loading-sub { font-size: 12px; color: #909399; margin: 0; }
+.spin-icon { animation: spin 1.2s linear infinite; color: #409eff; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .steps { margin-bottom: 24px; background: #fff; padding: 20px; border-radius: 8px; }
 .section-card { margin-bottom: 16px; }
 
@@ -239,6 +347,27 @@ async function adoptDish(dishId) {
 .scene-item, .profile-item { display: flex; gap: 8px; font-size: 14px; }
 .s-label, .p-label { color: #909399; min-width: 40px; }
 .pref-tags { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+.history-profile-info {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #ebeef5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.h-info-item {
+  display: flex;
+  gap: 12px;
+  font-size: 14px;
+}
+.h-label {
+  color: #909399;
+  min-width: 70px;
+}
+.h-desc-text {
+  color: #303133;
+  line-height: 1.4;
+}
 .script-alert { margin-bottom: 16px; }
 
 .dish-row { display: flex; gap: 12px; padding: 16px 0; border-bottom: 1px solid #f2f3f5; }
@@ -258,5 +387,57 @@ async function adoptDish(dishId) {
 }
 .script-label { font-size: 12px; color: #67c23a; font-weight: 600; }
 .script-text { font-size: 13px; color: #303133; }
-.dish-action { margin-top: 10px; }
+.dish-action { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+.qty-label { font-size: 12px; color: #909399; }
+.result-actions {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 24px 0; text-align: center;
+}
+.result-actions .action-hint {
+  font-size: 12px; color: #909399;
+}
+.guests-detail-section {
+  margin-top: 16px;
+}
+.g-section-divider {
+  border-top: 1px dashed #ebeef5;
+  margin-bottom: 12px;
+}
+.g-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0 0 10px 0;
+}
+.g-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.g-detail-item {
+  background: #fcfdfe;
+  border: 1px solid #f0f2f5;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.g-name-row {
+  margin-bottom: 6px;
+}
+.g-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d3461;
+}
+.g-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.g-tag {
+  border-radius: 4px;
+}
+.g-no-req {
+  font-size: 12px;
+  color: #c0c4cc;
+}
 </style>
