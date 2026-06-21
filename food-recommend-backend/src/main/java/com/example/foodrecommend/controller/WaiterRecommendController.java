@@ -16,6 +16,8 @@ import com.example.foodrecommend.service.DishService;
 import com.example.foodrecommend.service.RecommendService;
 import com.example.foodrecommend.service.UserProfileService;
 import com.example.foodrecommend.dto.UserProfileDTO;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +33,7 @@ import java.util.Map;
 /**
  * 服务员推荐控制器
  */
+@Tag(name = "服务员-推荐", description = "推荐、历史记录、反馈、营业额")
 @Slf4j
 @RestController
 @RequestMapping("/api/waiter")
@@ -47,6 +50,7 @@ public class WaiterRecommendController {
     /**
      * 查看可推荐菜品列表（只显示上架 + 有库存 + 向量已生成的）
      */
+    @Operation(summary = "可推荐菜品列表", description = "只显示上架、有库存、向量已生成的菜品")
     @GetMapping("/dishes")
     public Result<List<Dish>> listAllDishes() {
         return Result.success(dishService.listAvailable());
@@ -55,6 +59,7 @@ public class WaiterRecommendController {
     /**
      * 标签+场景推荐（5 Agent 管线）
      */
+    @Operation(summary = "标签+场景推荐", description = "5 Agent 推荐管线，输入标签JSON和可选场景图片")
     @PostMapping("/recommend")
     public Result<RecommendWithScriptDTO> recommend(
             @RequestParam("tagInputJson") String tagInputJson,
@@ -73,6 +78,7 @@ public class WaiterRecommendController {
      * 语音推荐（Agent 0 + 5 Agent 管线）
      * 适用于微信小程序语音输入
      */
+    @Operation(summary = "语音推荐", description = "Agent 0 理解语音文本 + 5 Agent 推荐管线")
     @PostMapping("/recommend/voice")
     public Result<RecommendWithScriptDTO> recommendByVoice(
             @RequestParam("voiceText") String voiceText,
@@ -91,6 +97,7 @@ public class WaiterRecommendController {
     /**
      * 根据手机号查询顾客的长期记忆/历史画像
      */
+    @Operation(summary = "查询顾客画像", description = "根据手机号获取顾客长期记忆/历史偏好")
     @GetMapping("/customer/profile")
     public Result<UserProfileDTO> getCustomerProfile(@RequestParam("phone") String phone) {
         return Result.success(userProfileService.getCustomerHistoryProfile(phone));
@@ -99,6 +106,7 @@ public class WaiterRecommendController {
     /**
      * 查看自己的推荐记录（附带每条推荐的采纳反馈明细）
      */
+    @Operation(summary = "我的推荐历史", description = "查看自己的推荐记录，含反馈明细，最近50条")
     @GetMapping("/history")
     public Result<List<RecommendationRecord>> listMyHistory(
             @AuthenticationPrincipal UserPrincipal principal) {
@@ -129,6 +137,7 @@ public class WaiterRecommendController {
     /**
      * 获取推荐详情（附带反馈明细）
      */
+    @Operation(summary = "推荐详情", description = "获取单条推荐记录及其反馈明细")
     @GetMapping("/history/{id}")
     public Result<RecommendationRecord> getRecordDetail(@PathVariable Long id) {
         RecommendationRecord record = recordMapper.selectById(id);
@@ -148,6 +157,7 @@ public class WaiterRecommendController {
      * 反馈推荐结果（采纳/不采纳，采纳时扣减库存）
      * 一条推荐可采纳多道不同菜品，但同一道菜品不可重复采纳
      */
+    @Operation(summary = "提交推荐反馈", description = "采纳/不采纳推荐结果，采纳时自动扣减库存")
     @Transactional
     @PostMapping("/feedback/{recordId}")
     public Result<String> submitFeedback(
@@ -212,6 +222,7 @@ public class WaiterRecommendController {
     /**
      * 获取服务员自己的营业额
      */
+    @Operation(summary = "我的营业额", description = "统计服务员本人的推荐带来的营业额")
     @GetMapping("/revenue")
     public Result<Map<String, Object>> getMyRevenue(@AuthenticationPrincipal UserPrincipal principal) {
         List<RecommendationFeedback> feedbacks = feedbackMapper.selectList(

@@ -32,5 +32,6 @@ application.yml
 
 # Logs
 *.log
+logs/
 storage/
 .superpowers/

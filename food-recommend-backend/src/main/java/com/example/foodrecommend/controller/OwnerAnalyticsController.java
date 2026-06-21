@@ -13,6 +13,8 @@ import com.example.foodrecommend.mapper.RecommendationFeedbackMapper;
 import com.example.foodrecommend.mapper.RecommendationRecordMapper;
 import com.example.foodrecommend.mapper.UserMapper;
 import com.example.foodrecommend.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
 /**
  * 老板控制器：数据分析 + 员工管理 + 全部记录
  */
+@Tag(name = "店主-管理", description = "数据概览、员工管理、全部推荐记录")
 @RestController
 @RequestMapping("/api/owner")
 @RequiredArgsConstructor
@@ -39,6 +42,7 @@ public class OwnerAnalyticsController {
     /**
      * 数据概览
      */
+    @Operation(summary = "数据概览", description = "获取推荐总数、采纳率、营业额、热门菜品、服务员表现")
     @Transactional(readOnly = true)
     @GetMapping("/analytics/overview")
     public Result<AnalyticsDTO> getOverview() {
@@ -106,6 +110,7 @@ public class OwnerAnalyticsController {
     /**
      * 全部推荐记录（附带反馈明细）
      */
+    @Operation(summary = "全部推荐记录", description = "可按 waiterId/adopted 过滤，附反馈明细，最多200条")
     @GetMapping("/records")
     public Result<List<RecommendationRecord>> listAllRecords(
             @RequestParam(value = "waiterId", required = false) Long waiterId,
@@ -147,6 +152,7 @@ public class OwnerAnalyticsController {
     /**
      * 获取推荐记录详情（附带反馈明细）
      */
+    @Operation(summary = "推荐记录详情", description = "获取单条推荐记录及反馈明细")
     @GetMapping("/records/{id}")
     public Result<RecommendationRecord> getRecordDetail(@PathVariable Long id) {
         RecommendationRecord record = recordMapper.selectById(id);
@@ -166,6 +172,7 @@ public class OwnerAnalyticsController {
     /**
      * 员工管理：列表
      */
+    @Operation(summary = "员工列表", description = "获取全部服务员列表")
     @GetMapping("/staff")
     public Result<List<User>> listStaff() {
         return Result.success(userService.listWaiters());
@@ -174,6 +181,7 @@ public class OwnerAnalyticsController {
     /**
      * 员工管理：新增
      */
+    @Operation(summary = "新增员工", description = "老板创建服务员账号")
     @PostMapping("/staff")
     public Result<User> createStaff(@RequestBody Map<String, String> body) {
         User user = userService.createWaiter(
@@ -188,6 +196,7 @@ public class OwnerAnalyticsController {
     /**
      * 员工管理：启用/禁用
      */
+    @Operation(summary = "启用/禁用员工", description = "更新服务员账号状态（1启用/0禁用）")
     @PutMapping("/staff/{id}/status")
     public Result<String> updateStaffStatus(@PathVariable Long id,
                                              @RequestBody Map<String, Integer> body) {
@@ -198,6 +207,7 @@ public class OwnerAnalyticsController {
     /**
      * 员工管理：删除
      */
+    @Operation(summary = "删除员工", description = "删除服务员账号")
     @DeleteMapping("/staff/{id}")
     public Result<String> deleteStaff(@PathVariable Long id) {
         userService.deleteWaiter(id);
