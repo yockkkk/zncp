@@ -3,6 +3,7 @@ package com.example.foodrecommend.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.foodrecommend.common.BusinessException;
 import com.example.foodrecommend.common.Result;
+import com.example.foodrecommend.dto.FeedbackRequestDTO;
 import com.example.foodrecommend.dto.RecommendRequestDTO;
 import com.example.foodrecommend.dto.RecommendWithScriptDTO;
 import com.example.foodrecommend.entity.RecommendationFeedback;
@@ -15,6 +16,7 @@ import com.example.foodrecommend.service.DishService;
 import com.example.foodrecommend.service.RecommendService;
 import com.example.foodrecommend.service.UserProfileService;
 import com.example.foodrecommend.dto.UserProfileDTO;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -150,7 +152,7 @@ public class WaiterRecommendController {
     @PostMapping("/feedback/{recordId}")
     public Result<String> submitFeedback(
             @PathVariable Long recordId,
-            @RequestBody Map<String, Object> body,
+            @Valid @RequestBody FeedbackRequestDTO req,
             @AuthenticationPrincipal UserPrincipal principal) {
 
         RecommendationRecord record = recordMapper.selectById(recordId);
@@ -158,20 +160,9 @@ public class WaiterRecommendController {
             throw new BusinessException("推荐记录不存在");
         }
 
-        Boolean adopted = (Boolean) body.get("adopted");
-        Object adoptedDishIdObj = body.get("adoptedDishId");
-        boolean isAdopted = adopted != null && adopted;
-
-        // P1-9: 解析 adoptedDishId，捕获异常
-        Long adoptedDishId = null;
-        if (adoptedDishIdObj != null) {
-            try {
-                adoptedDishId = Long.valueOf(adoptedDishIdObj.toString());
-            } catch (NumberFormatException e) {
-                log.warn("adoptedDishId 参数解析失败: {}", adoptedDishIdObj);
-                adoptedDishId = null;
-            }
-        }
+        boolean isAdopted = Boolean.TRUE.equals(req.getAdopted());
+        Long adoptedDishId = req.getAdoptedDishId();
+        int quantity = (req.getQuantity() != null && req.getQuantity() > 0) ? req.getQuantity() : 1;
 
         // 防止同一道菜品被重复采纳
         if (isAdopted && adoptedDishId != null) {
@@ -185,22 +176,7 @@ public class WaiterRecommendController {
             }
         }
 
-        // P1-8: 解析数量，默认1，捕获异常
-        int quantity = 1;
-        Object quantityObj = body.get("quantity");
-        if (quantityObj != null) {
-            try {
-                quantity = Integer.parseInt(quantityObj.toString());
-            } catch (NumberFormatException e) {
-                log.warn("quantity 参数解析失败: {}, 使用默认值1", quantityObj);
-                quantity = 1;
-            }
-        }
-        if (quantity <= 0) {
-            quantity = 1;
-        }
-
-        // P1-11: 采纳时校验菜品存在且库存充足
+        // 采纳时校验菜品存在且库存充足
         if (isAdopted && adoptedDishId != null) {
             Dish adoptedDish = dishService.getById(adoptedDishId);
             if (adoptedDish == null) {
@@ -212,7 +188,7 @@ public class WaiterRecommendController {
             dishService.deductStock(adoptedDishId, quantity);
         }
 
-        // 更新推荐记录（adopted 只增不减，adoptedDishId/adoptedQuantity 记录最近一次采纳）
+        // 更新推荐记录
         if (isAdopted && adoptedDishId != null) {
             record.setAdopted(1);
             record.setAdoptedDishId(adoptedDishId);
@@ -220,18 +196,14 @@ public class WaiterRecommendController {
             recordMapper.updateById(record);
         }
 
-        // 保存反馈详情
+        // 保存反馈
         RecommendationFeedback feedback = new RecommendationFeedback();
         feedback.setRecordId(recordId);
         feedback.setWaiterId(principal.getUserId());
         feedback.setAdoptedDishId(adoptedDishId);
         feedback.setQuantity(isAdopted ? quantity : null);
-        if (body.get("rating") != null) {
-            feedback.setRating(Integer.valueOf(body.get("rating").toString()));
-        }
-        if (body.get("note") != null) {
-            feedback.setNote(body.get("note").toString());
-        }
+        feedback.setRating(req.getRating());
+        feedback.setNote(req.getNote());
         feedbackMapper.insert(feedback);
 
         return Result.success(isAdopted ? "采纳成功，已扣减库存" : "反馈成功", null);

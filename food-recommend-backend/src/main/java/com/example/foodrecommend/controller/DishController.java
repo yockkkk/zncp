@@ -4,6 +4,7 @@ import com.example.foodrecommend.common.Result;
 import com.example.foodrecommend.entity.Dish;
 import com.example.foodrecommend.service.DishService;
 import com.example.foodrecommend.service.RecommendService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -35,13 +36,13 @@ public class DishController {
 
     @PostMapping({"/api/owner/dishes", "/api/admin/dish"})
     @PreAuthorize("hasRole('OWNER')")
-    public Result<Dish> add(@RequestBody Dish dish) {
+    public Result<Dish> add(@Valid @RequestBody Dish dish) {
         return Result.success("新增成功", dishService.addDish(dish));
     }
 
     @PutMapping({"/api/owner/dishes/{id}", "/api/admin/dish/{id}"})
     @PreAuthorize("hasRole('OWNER')")
-    public Result<Dish> update(@PathVariable Long id, @RequestBody Dish dish) {
+    public Result<Dish> update(@PathVariable Long id, @Valid @RequestBody Dish dish) {
         return Result.success("修改成功", dishService.updateDish(id, dish));
     }
 

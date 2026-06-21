@@ -7,6 +7,7 @@ import com.example.foodrecommend.dto.LoginResultDTO;
 import com.example.foodrecommend.dto.WxLoginDTO;
 import com.example.foodrecommend.entity.User;
 import com.example.foodrecommend.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +28,7 @@ public class AuthController {
      * 密码登录
      */
     @PostMapping("/login")
-    public Result<LoginResultDTO> login(@RequestBody LoginDTO loginDTO) {
+    public Result<LoginResultDTO> login(@Valid @RequestBody LoginDTO loginDTO) {
         LoginResultDTO result = userService.login(loginDTO);
         return Result.success("登录成功", result);
     }
@@ -36,7 +37,7 @@ public class AuthController {
      * 微信小程序登录
      */
     @PostMapping("/wx-login")
-    public Result<LoginResultDTO> wxLogin(@RequestBody WxLoginDTO wxLoginDTO) {
+    public Result<LoginResultDTO> wxLogin(@Valid @RequestBody WxLoginDTO wxLoginDTO) {
         if (wxLoginDTO.getCode() == null || wxLoginDTO.getCode().isEmpty()) {
             throw new BusinessException("code 不能为空");
         }
