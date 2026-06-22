@@ -30,6 +30,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Swagger UI
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                // Actuator health check
+                .requestMatchers("/actuator/health").permitAll()
                 // 公开接口
                 .requestMatchers("/api/auth/**").permitAll()
                 // 静态资源
