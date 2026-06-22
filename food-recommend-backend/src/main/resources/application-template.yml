@@ -78,3 +78,14 @@ management:
   endpoint:
     health:
       show-details: never
+
+# 反馈反哺排序（feedback-boost）
+recommend:
+  feedback-boost:
+    enabled: true
+    collection-name: recommendation_history
+    min-samples: 3
+    top-k-similar: 20
+    similarity-threshold: 0.75
+    weight: 0.15
+    boost-cap: 5
