@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testpass
+          MYSQL_DATABASE: food_recommend
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -ptestpass"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Run tests
+        working-directory: food-recommend-backend
+        env:
+          MYSQL_URL: jdbc:mysql://localhost:3306/food_recommend?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+          MYSQL_USER: root
+          MYSQL_PASSWORD: testpass
+          QDRANT_HOST: localhost
+          QDRANT_PORT: '6333'
+          JWT_SECRET: ci-test-secret-32-bytes-min-length-please
+        run: mvn -B verify
+      - name: Upload surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: food-recommend-backend/target/surefire-reports/
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: food-recommend-frontend/package-lock.json
+      - name: Install dependencies
+        working-directory: food-recommend-frontend
+        run: npm ci
+      - name: Lint
+        working-directory: food-recommend-frontend
+        run: npm run lint
+      - name: Build
+        working-directory: food-recommend-frontend
+        run: npm run build
+
+  miniprogram-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: food-recommend-miniprogram
+        run: npm install
+      - name: Lint
+        working-directory: food-recommend-miniprogram
+        run: npm run lint

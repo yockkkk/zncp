@@ -6,7 +6,8 @@
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.5-green)
 ![Vue](https://img.shields.io/badge/Vue-3-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-blue)
-<!-- CI badge added in Task 6 -->
+<!-- TODO: replace <OWNER>/<REPO> with your GitHub username/repo-name, e.g. yockkkk/zncp -->
+![CI](https://github.com/<OWNER>/<REPO>/actions/workflows/ci.yml/badge.svg)
 
 ## 系统架构
 
