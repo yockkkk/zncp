@@ -1,6 +1,7 @@
-CREATE DATABASE IF NOT EXISTS food_recommend DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE food_recommend;
+-- H2 compatible schema for testing
+-- This is used by @Sql annotation or in-memory initialization
 
+DROP TABLE IF EXISTS feedback_index_dlq;
 DROP TABLE IF EXISTS recommendation_feedback;
 DROP TABLE IF EXISTS customer_profile;
 DROP TABLE IF EXISTS prompt_template;
@@ -8,7 +9,7 @@ DROP TABLE IF EXISTS recommendation_record;
 DROP TABLE IF EXISTS sys_user;
 DROP TABLE IF EXISTS dish;
 
-CREATE TABLE IF NOT EXISTS dish (
+CREATE TABLE dish (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '菜品ID',
     name VARCHAR(100) NOT NULL COMMENT '菜品名称',
     category VARCHAR(50) COMMENT '菜品分类',
@@ -29,10 +30,10 @@ CREATE TABLE IF NOT EXISTS dish (
     vector_status TINYINT DEFAULT 0 COMMENT '向量状态：0未生成，1已生成',
     gross_margin DECIMAL(5,2) DEFAULT 0.60 COMMENT '毛利率',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP
 ) COMMENT='菜品表';
 
-CREATE TABLE IF NOT EXISTS recommendation_record (
+CREATE TABLE recommendation_record (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '推荐记录ID',
     user_id BIGINT COMMENT '用户ID，可为空',
     phone VARCHAR(20) DEFAULT NULL COMMENT '顾客手机号',
@@ -52,7 +53,7 @@ CREATE TABLE IF NOT EXISTS recommendation_record (
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP
 ) COMMENT='推荐记录表';
 
-CREATE TABLE IF NOT EXISTS prompt_template (
+CREATE TABLE prompt_template (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     code VARCHAR(100) NOT NULL COMMENT '提示词编码',
     name VARCHAR(100) COMMENT '提示词名称',
@@ -60,10 +61,10 @@ CREATE TABLE IF NOT EXISTS prompt_template (
     type VARCHAR(50) COMMENT '类型：vision/recommend/rerank',
     status TINYINT DEFAULT 1 COMMENT '状态：1启用，0禁用',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP
 ) COMMENT='系统提示词表';
 
-CREATE TABLE IF NOT EXISTS customer_profile (
+CREATE TABLE customer_profile (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     record_id BIGINT COMMENT '推荐记录ID',
     age_range VARCHAR(50) COMMENT '年龄段',
@@ -76,8 +77,7 @@ CREATE TABLE IF NOT EXISTS customer_profile (
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP
 ) COMMENT='顾客画像表';
 
--- 系统用户表
-CREATE TABLE IF NOT EXISTS sys_user (
+CREATE TABLE sys_user (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) NOT NULL UNIQUE COMMENT '登录名',
     password VARCHAR(255) NOT NULL COMMENT 'BCrypt加密密码',
@@ -88,11 +88,10 @@ CREATE TABLE IF NOT EXISTS sys_user (
     unionid VARCHAR(100) COMMENT '微信unionid',
     status TINYINT DEFAULT 1 COMMENT '状态：1启用，0禁用',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP
 ) COMMENT='系统用户表';
 
--- 推荐反馈表
-CREATE TABLE IF NOT EXISTS recommendation_feedback (
+CREATE TABLE recommendation_feedback (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     record_id BIGINT NOT NULL COMMENT '推荐记录ID',
     waiter_id BIGINT NOT NULL COMMENT '服务员ID',
@@ -105,8 +104,7 @@ CREATE TABLE IF NOT EXISTS recommendation_feedback (
     INDEX idx_waiter (waiter_id)
 ) COMMENT='推荐反馈表';
 
--- 反馈索引DLQ表
-CREATE TABLE IF NOT EXISTS feedback_index_dlq (
+CREATE TABLE feedback_index_dlq (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     record_id BIGINT NOT NULL,
     error TEXT,
