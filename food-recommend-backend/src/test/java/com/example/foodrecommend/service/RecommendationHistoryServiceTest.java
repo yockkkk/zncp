@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RecommendationHistoryServiceTest {
 
     @Autowired FeedbackBoostProperties props;
+    @Autowired RecommendationHistoryService historyService;
 
     @Test
     void properties_bind_with_defaults() {
@@ -29,5 +30,16 @@ class RecommendationHistoryServiceTest {
         assertThat(props.getCollectionName()).isEqualTo("recommendation_history");
         assertThat(props.getWeight()).isEqualTo(0.15);
         assertThat(props.getBoostCap()).isEqualTo(5);
+    }
+
+    @Test
+    void lookupBoost_disabled_returns_empty() {
+        // 测试环境 properties 中 enabled=true，临时切关：用 ReflectionTestUtils
+        org.springframework.test.util.ReflectionTestUtils.setField(props, "enabled", false);
+        try {
+            assertThat(historyService.lookupBoost("任意 query")).isEmpty();
+        } finally {
+            org.springframework.test.util.ReflectionTestUtils.setField(props, "enabled", true);
+        }
     }
 }
