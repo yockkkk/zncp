@@ -34,7 +34,59 @@ public class RecommendationHistoryServiceImpl implements RecommendationHistorySe
     @Override
     public Map<Long, Integer> lookupBoost(String queryText) {
         if (!props.isEnabled()) return Collections.emptyMap();
-        // 实际查询在 Task 4 实现
-        return Collections.emptyMap();
+        try {
+            List<Float> vec = embeddingService.getEmbedding(queryText);
+            if (vec == null || vec.isEmpty()) return Collections.emptyMap();
+
+            Map<String, Object> body = new java.util.HashMap<>();
+            body.put("vector", vec);
+            body.put("limit", props.getTopKSimilar());
+            body.put("with_payload", true);
+            body.put("score_threshold", props.getSimilarityThreshold());
+
+            String url = "http://" + qdrantConfig.getHost() + ":" + qdrantConfig.getPort()
+                    + "/collections/" + props.getCollectionName() + "/points/search";
+
+            okhttp3.Request req = new okhttp3.Request.Builder()
+                    .url(url)
+                    .post(okhttp3.RequestBody.create(objectMapper.writeValueAsString(body),
+                            okhttp3.MediaType.parse("application/json")))
+                    .build();
+
+            try (okhttp3.Response resp = httpClient.newCall(req).execute()) {
+                if (!resp.isSuccessful() || resp.body() == null) {
+                    log.warn("boost.lookup.miss reason=qdrant_error code={}", resp.code());
+                    return Collections.emptyMap();
+                }
+                com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(resp.body().string());
+                com.fasterxml.jackson.databind.JsonNode results = root.path("result");
+                if (!results.isArray() || results.size() == 0) {
+                    log.info("boost.lookup.miss reason=no_similar");
+                    return Collections.emptyMap();
+                }
+                Map<Long, Integer> agg = new java.util.HashMap<>();
+                int sampleCount = 0;
+                for (com.fasterxml.jackson.databind.JsonNode node : results) {
+                    double score = node.path("score").asDouble(0.0);
+                    if (score < props.getSimilarityThreshold()) continue;
+                    com.fasterxml.jackson.databind.JsonNode ids = node.path("payload").path("adoptedDishIds");
+                    if (!ids.isArray() || ids.size() == 0) continue;
+                    sampleCount++;
+                    for (com.fasterxml.jackson.databind.JsonNode id : ids) {
+                        long dishId = id.asLong();
+                        agg.merge(dishId, 1, Integer::sum);
+                    }
+                }
+                if (sampleCount < props.getMinSamples()) {
+                    log.info("boost.lookup.miss reason=below_min_samples samples={}", sampleCount);
+                    return Collections.emptyMap();
+                }
+                log.info("boost.lookup.hit samples={} boostedCount={}", sampleCount, agg.size());
+                return agg;
+            }
+        } catch (Exception e) {
+            log.warn("boost.lookup.miss reason=exception msg={}", e.getMessage());
+            return Collections.emptyMap();
+        }
     }
 }
