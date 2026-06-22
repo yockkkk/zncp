@@ -7,7 +7,8 @@
       </div>
 
       <!-- 服务员菜单 -->
-      <el-menu v-if="auth.isWaiter"
+      <el-menu
+        v-if="auth.isWaiter"
         :default-active="route.path"
         router
         background-color="#1d1e2c"
@@ -25,7 +26,8 @@
       </el-menu>
 
       <!-- 老板菜单 -->
-      <el-menu v-if="auth.isOwner"
+      <el-menu
+        v-if="auth.isOwner"
         :default-active="route.path"
         router
         background-color="#1d1e2c"
@@ -79,7 +81,15 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
-import { DishDot, MagicStick, Food, Clock, TrendCharts, Document, User } from '@element-plus/icons-vue'
+import {
+  DishDot,
+  MagicStick,
+  Food,
+  Clock,
+  TrendCharts,
+  Document,
+  User
+} from '@element-plus/icons-vue'
 import { useAuthStore } from '../stores/auth'
 import { ROLE_LABELS } from '../utils/roles'
 import { computed } from 'vue'
@@ -91,14 +101,16 @@ const auth = useAuthStore()
 const roleLabel = computed(() => ROLE_LABELS[auth.role] || '')
 
 function handleLogout() {
-  ElMessageBox.confirm(
-    '确定要退出登录吗？',
-    '退出确认',
-    { confirmButtonText: '确定退出', cancelButtonText: '取消', type: 'warning' }
-  ).then(() => {
-    auth.logout()
-    router.push('/login')
-  }).catch(() => {})
+  ElMessageBox.confirm('确定要退出登录吗？', '退出确认', {
+    confirmButtonText: '确定退出',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+    .then(() => {
+      auth.logout()
+      router.push('/login')
+    })
+    .catch(() => {})
 }
 </script>
 

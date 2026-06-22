@@ -7,8 +7,12 @@
         <div class="slider-text" :class="{ moving: isMoving }">
           {{ isMoving ? '' : '→ 按住滑块，拖动到最右边 →' }}
         </div>
-        <div class="slider-btn" :style="{ left: sliderLeft + 'px' }"
-          @mousedown="onSliderStart" @touchstart.prevent="onSliderStart">
+        <div
+          class="slider-btn"
+          :style="{ left: sliderLeft + 'px' }"
+          @mousedown="onSliderStart"
+          @touchstart.prevent="onSliderStart"
+        >
           <span class="slider-arrow">→→</span>
         </div>
       </div>
@@ -22,9 +26,13 @@
         <span class="math-hint">= ?</span>
       </div>
       <div class="math-options">
-        <span v-for="opt in mathOptions" :key="opt"
-          class="math-opt" :class="{ wrong: opt === wrongAnswer }"
-          @click="checkMathAnswer(opt)">
+        <span
+          v-for="opt in mathOptions"
+          :key="opt"
+          class="math-opt"
+          :class="{ wrong: opt === wrongAnswer }"
+          @click="checkMathAnswer(opt)"
+        >
           {{ opt }}
         </span>
       </div>
@@ -32,14 +40,15 @@
 
     <!-- 模式 2: 选出不同类的一项 -->
     <div v-else-if="mode === 'clickText' && !passed" class="captcha-click">
-      <div class="click-prompt">
-        👆 <b>选出不同类的一项</b>
-      </div>
+      <div class="click-prompt">👆 <b>选出不同类的一项</b></div>
       <div class="click-grid-4">
-        <div v-for="(item, i) in oddOneItems" :key="i"
+        <div
+          v-for="(item, i) in oddOneItems"
+          :key="i"
           class="odd-card"
           :class="{ right: i === oddOneCorrect && answered, wrong: i === oddOneWrong }"
-          @click="checkOddOne(i)">
+          @click="checkOddOne(i)"
+        >
           <span class="odd-emoji">{{ item.emoji }}</span>
           <span class="odd-label">{{ item.label }}</span>
         </div>
@@ -52,10 +61,13 @@
         <span>🧭</span> 请点击箭头指向 <b>{{ dirQuestion }}</b> 的图片
       </div>
       <div class="dir-grid">
-        <div v-for="(item, i) in dirItems" :key="i"
+        <div
+          v-for="(item, i) in dirItems"
+          :key="i"
           class="dir-card"
           :class="{ selected: i === dirSelected, wrong: i === dirWrong }"
-          @click="checkDirection(i)">
+          @click="checkDirection(i)"
+        >
           <span class="dir-emoji">{{ item.emoji }}</span>
           <span class="dir-label">{{ item.label }}</span>
         </div>
@@ -69,14 +81,15 @@
     </div>
 
     <!-- 底部操作栏 -->
-    <div class="captcha-actions" v-if="!passed">
+    <div v-if="!passed" class="captcha-actions">
       <span class="mode-switch" @click.stop="refreshCaptcha">🔄 换一种验证方式</span>
-      <span class="attempt-hint" v-if="failCount > 0">失败 {{ failCount }} 次</span>
+      <span v-if="failCount > 0" class="attempt-hint">失败 {{ failCount }} 次</span>
     </div>
   </div>
 </template>
 
 <script setup>
+// eslint-disable-next-line no-unused-vars
 import { ref, computed, onMounted } from 'vue'
 import { Check } from '@element-plus/icons-vue'
 
@@ -84,7 +97,7 @@ const emit = defineEmits(['verify'])
 
 const passed = ref(false)
 const mode = ref('slider')
-const failCount = ref(0)  // 内部追踪真实失败次数
+const failCount = ref(0) // 内部追踪真实失败次数
 const isMoving = ref(false)
 const sliderLeft = ref(0)
 const maxSlide = 240
@@ -124,10 +137,18 @@ function pickMode() {
 
 function initCaptcha() {
   switch (mode.value) {
-    case 'slider': initSlider(); break
-    case 'math': initMath(); break
-    case 'clickText': initClickText(); break
-    case 'direction': initDirection(); break
+    case 'slider':
+      initSlider()
+      break
+    case 'math':
+      initMath()
+      break
+    case 'clickText':
+      initClickText()
+      break
+    case 'direction':
+      initDirection()
+      break
   }
 }
 
@@ -197,28 +218,51 @@ function checkMathAnswer(val) {
     wrongAnswer.value = val
     failCount.value++
     emit('verify', false)
-    setTimeout(() => { wrongAnswer.value = null; refreshCaptcha() }, 800)
+    setTimeout(() => {
+      wrongAnswer.value = null
+      refreshCaptcha()
+    }, 800)
   }
 }
 
 // ===== 选出不同类 =====
 const oddOneSets = [
-  { items: [
-    { emoji: '🐱', label: '猫' }, { emoji: '🐶', label: '狗' },
-    { emoji: '🐰', label: '兔' }, { emoji: '🌲', label: '树' }
-  ], answer: 3 },
-  { items: [
-    { emoji: '🍎', label: '苹果' }, { emoji: '🍌', label: '香蕉' },
-    { emoji: '🍇', label: '葡萄' }, { emoji: '🥩', label: '牛肉' }
-  ], answer: 3 },
-  { items: [
-    { emoji: '🚗', label: '汽车' }, { emoji: '🚌', label: '公交' },
-    { emoji: '🚲', label: '单车' }, { emoji: '🛳️', label: '轮船' }
-  ], answer: 3 },
-  { items: [
-    { emoji: '📱', label: '手机' }, { emoji: '💻', label: '电脑' },
-    { emoji: '⌚', label: '手表' }, { emoji: '📖', label: '书本' }
-  ], answer: 3 }
+  {
+    items: [
+      { emoji: '🐱', label: '猫' },
+      { emoji: '🐶', label: '狗' },
+      { emoji: '🐰', label: '兔' },
+      { emoji: '🌲', label: '树' }
+    ],
+    answer: 3
+  },
+  {
+    items: [
+      { emoji: '🍎', label: '苹果' },
+      { emoji: '🍌', label: '香蕉' },
+      { emoji: '🍇', label: '葡萄' },
+      { emoji: '🥩', label: '牛肉' }
+    ],
+    answer: 3
+  },
+  {
+    items: [
+      { emoji: '🚗', label: '汽车' },
+      { emoji: '🚌', label: '公交' },
+      { emoji: '🚲', label: '单车' },
+      { emoji: '🛳️', label: '轮船' }
+    ],
+    answer: 3
+  },
+  {
+    items: [
+      { emoji: '📱', label: '手机' },
+      { emoji: '💻', label: '电脑' },
+      { emoji: '⌚', label: '手表' },
+      { emoji: '📖', label: '书本' }
+    ],
+    answer: 3
+  }
 ]
 function initClickText() {
   oddOneWrong.value = -1
@@ -227,7 +271,7 @@ function initClickText() {
   const set = oddOneSets[Math.floor(Math.random() * oddOneSets.length)]
   oddOneItems.value = [...set.items].sort(() => Math.random() - 0.5)
   oddOneCorrect.value = oddOneItems.value.findIndex(
-    item => item.label === set.items[set.answer].label
+    (item) => item.label === set.items[set.answer].label
   )
 }
 function checkOddOne(i) {
@@ -261,6 +305,7 @@ function initDirection() {
   dirQuestion.value = target.dir
   dirItems.value = directions.sort(() => Math.random() - 0.5)
   // 存储正确答案
+  // eslint-disable-next-line no-unused-vars
   dirItems.value.forEach((item, i) => {
     if (item.dir === target.dir) dirSelected.value = null
   })
@@ -274,7 +319,10 @@ function checkDirection(i) {
     dirWrong.value = i
     failCount.value++
     emit('verify', false)
-    setTimeout(() => { dirWrong.value = null; refreshCaptcha() }, 800)
+    setTimeout(() => {
+      dirWrong.value = null
+      refreshCaptcha()
+    }, 800)
   }
 }
 
@@ -302,86 +350,250 @@ defineExpose({ reset })
 </script>
 
 <style scoped>
-.smart-captcha { width: 100%; }
+.smart-captcha {
+  width: 100%;
+}
 .captcha-passed {
-  display: flex; align-items: center; gap: 6px; justify-content: center;
-  height: 38px; color: #67c23a; font-size: 13px; font-weight: 500;
-  background: #f0f9eb; border-radius: 6px; border: 1px solid #c2e7b0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  height: 38px;
+  color: #67c23a;
+  font-size: 13px;
+  font-weight: 500;
+  background: #f0f9eb;
+  border-radius: 6px;
+  border: 1px solid #c2e7b0;
 }
 
 /* === 滑块 === */
-.captcha-slider { width: 100%; height: 38px; user-select: none; }
+.captcha-slider {
+  width: 100%;
+  height: 38px;
+  user-select: none;
+}
 .slider-track {
-  position: relative; width: 100%; height: 38px;
-  background: #eceff4; border-radius: 19px; overflow: hidden; border: 1px solid #dcdfe6;
+  position: relative;
+  width: 100%;
+  height: 38px;
+  background: #eceff4;
+  border-radius: 19px;
+  overflow: hidden;
+  border: 1px solid #dcdfe6;
 }
 .slider-bg {
-  position: absolute; left: 0; top: 0; bottom: 0;
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
   background: linear-gradient(90deg, #67c23a, #85ce61);
-  border-radius: 19px 0 0 19px; transition: width 0.05s linear;
+  border-radius: 19px 0 0 19px;
+  transition: width 0.05s linear;
 }
 .slider-text {
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  font-size: 12px; color: #909399; pointer-events: none; letter-spacing: 2px;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #909399;
+  pointer-events: none;
+  letter-spacing: 2px;
 }
-.slider-text.moving { color: transparent; }
+.slider-text.moving {
+  color: transparent;
+}
 .slider-btn {
-  position: absolute; top: 2px; width: 34px; height: 34px;
-  background: #fff; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  display: flex; align-items: center; justify-content: center; cursor: grab; z-index: 2;
+  position: absolute;
+  top: 2px;
+  width: 34px;
+  height: 34px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  z-index: 2;
 }
-.slider-btn:active { cursor: grabbing; }
-.slider-arrow { color: #909399; font-size: 12px; font-weight: bold; }
+.slider-btn:active {
+  cursor: grabbing;
+}
+.slider-arrow {
+  color: #909399;
+  font-size: 12px;
+  font-weight: bold;
+}
 
 /* === 数学 === */
-.math-question { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 16px; font-weight: 600; color: #303133; }
-.math-icon { font-size: 20px; }
-.math-text { letter-spacing: 3px; }
-.math-hint { color: #409eff; }
-.math-options { display: flex; gap: 10px; }
-.math-opt {
-  flex: 1; text-align: center; padding: 8px 0;
-  border: 2px solid #dcdfe6; border-radius: 8px; cursor: pointer;
-  font-size: 18px; font-weight: 700; color: #303133; transition: all 0.2s;
+.math-question {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
 }
-.math-opt:hover { border-color: #409eff; background: #ecf5ff; }
-.math-opt.wrong { border-color: #f56c6c; background: #fef0f0; color: #f56c6c; animation: shake 0.4s; }
+.math-icon {
+  font-size: 20px;
+}
+.math-text {
+  letter-spacing: 3px;
+}
+.math-hint {
+  color: #409eff;
+}
+.math-options {
+  display: flex;
+  gap: 10px;
+}
+.math-opt {
+  flex: 1;
+  text-align: center;
+  padding: 8px 0;
+  border: 2px solid #dcdfe6;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 700;
+  color: #303133;
+  transition: all 0.2s;
+}
+.math-opt:hover {
+  border-color: #409eff;
+  background: #ecf5ff;
+}
+.math-opt.wrong {
+  border-color: #f56c6c;
+  background: #fef0f0;
+  color: #f56c6c;
+  animation: shake 0.4s;
+}
 
 /* === 选出不同类 === */
-.click-prompt { font-size: 14px; color: #303133; margin-bottom: 12px; text-align: center; }
-.click-grid-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.odd-card {
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  padding: 14px 8px; border: 2px solid #dcdfe6; border-radius: 10px; cursor: pointer; transition: all 0.2s;
+.click-prompt {
+  font-size: 14px;
+  color: #303133;
+  margin-bottom: 12px;
+  text-align: center;
 }
-.odd-card:hover { border-color: #409eff; background: #ecf5ff; transform: translateY(-1px); }
-.odd-card.right { border-color: #67c23a; background: #f0f9eb; }
-.odd-card.wrong { border-color: #f56c6c; background: #fef0f0; animation: shake 0.4s; }
-.odd-emoji { font-size: 36px; }
-.odd-label { font-size: 13px; color: #606266; font-weight: 500; }
+.click-grid-4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.odd-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border: 2px solid #dcdfe6;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.odd-card:hover {
+  border-color: #409eff;
+  background: #ecf5ff;
+  transform: translateY(-1px);
+}
+.odd-card.right {
+  border-color: #67c23a;
+  background: #f0f9eb;
+}
+.odd-card.wrong {
+  border-color: #f56c6c;
+  background: #fef0f0;
+  animation: shake 0.4s;
+}
+.odd-emoji {
+  font-size: 36px;
+}
+.odd-label {
+  font-size: 13px;
+  color: #606266;
+  font-weight: 500;
+}
 
 /* === 方向判断 === */
-.dir-prompt { font-size: 13px; color: #606266; margin-bottom: 10px; }
-.dir-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.dir-card {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 12px 8px; border: 2px solid #dcdfe6; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+.dir-prompt {
+  font-size: 13px;
+  color: #606266;
+  margin-bottom: 10px;
 }
-.dir-card:hover { border-color: #409eff; background: #ecf5ff; }
-.dir-card.selected { border-color: #67c23a; background: #f0f9eb; }
-.dir-card.wrong { border-color: #f56c6c; background: #fef0f0; animation: shake 0.4s; }
-.dir-emoji { font-size: 32px; }
-.dir-label { font-size: 12px; color: #909399; }
+.dir-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.dir-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border: 2px solid #dcdfe6;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.dir-card:hover {
+  border-color: #409eff;
+  background: #ecf5ff;
+}
+.dir-card.selected {
+  border-color: #67c23a;
+  background: #f0f9eb;
+}
+.dir-card.wrong {
+  border-color: #f56c6c;
+  background: #fef0f0;
+  animation: shake 0.4s;
+}
+.dir-emoji {
+  font-size: 32px;
+}
+.dir-label {
+  font-size: 12px;
+  color: #909399;
+}
 
 /* === 通用 === */
-.captcha-actions { display: flex; justify-content: space-between; margin-top: 8px; }
-.mode-switch { font-size: 12px; color: #909399; cursor: pointer; user-select: none; padding: 2px 4px; }
-.mode-switch:hover { color: #409eff; }
-.attempt-hint { font-size: 12px; color: #f56c6c; }
+.captcha-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.mode-switch {
+  font-size: 12px;
+  color: #909399;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 4px;
+}
+.mode-switch:hover {
+  color: #409eff;
+}
+.attempt-hint {
+  font-size: 12px;
+  color: #f56c6c;
+}
 
 @keyframes shake {
-  0%,100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
 }
 </style>

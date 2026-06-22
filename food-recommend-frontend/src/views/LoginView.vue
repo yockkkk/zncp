@@ -6,28 +6,48 @@
       <div class="left-content">
         <div class="brand-icon">
           <svg viewBox="0 0 80 80" width="80" height="80">
-            <circle cx="40" cy="40" r="38" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
-            <path d="M25 35 Q40 15 55 35 Q60 45 50 55 Q40 65 30 55 Q20 45 25 35Z" fill="rgba(255,255,255,0.9)"/>
-            <circle cx="40" cy="38" r="8" fill="#409eff"/>
-            <line x1="30" y1="55" x2="25" y2="65" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-            <line x1="50" y1="55" x2="55" y2="65" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+            <circle
+              cx="40"
+              cy="40"
+              r="38"
+              fill="none"
+              stroke="rgba(255,255,255,0.4)"
+              stroke-width="2"
+            />
+            <path
+              d="M25 35 Q40 15 55 35 Q60 45 50 55 Q40 65 30 55 Q20 45 25 35Z"
+              fill="rgba(255,255,255,0.9)"
+            />
+            <circle cx="40" cy="38" r="8" fill="#409eff" />
+            <line
+              x1="30"
+              y1="55"
+              x2="25"
+              y2="65"
+              stroke="#fff"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            />
+            <line
+              x1="50"
+              y1="55"
+              x2="55"
+              y2="65"
+              stroke="#fff"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            />
           </svg>
         </div>
         <h1 class="brand-title">智味AI</h1>
         <p class="brand-desc">
-          基于多模态场景感知的智能餐饮个性化推荐系统<br/>
+          基于多模态场景感知的智能餐饮个性化推荐系统<br />
           大模型多智能体协同，多模态特征融合匹配
         </p>
         <div class="brand-features">
-          <div class="feature-item">
-            <span class="feature-dot"></span>5 Agent 多智能体协同
-          </div>
-          <div class="feature-item">
-            <span class="feature-dot"></span>标签 + 场景双输入模式
-          </div>
-          <div class="feature-item">
-            <span class="feature-dot"></span>AI 生成服务员推荐话术
-          </div>
+          <div class="feature-item"><span class="feature-dot"></span>5 Agent 多智能体协同</div>
+          <div class="feature-item"><span class="feature-dot"></span>标签 + 场景双输入模式</div>
+          <div class="feature-item"><span class="feature-dot"></span>AI 生成服务员推荐话术</div>
         </div>
       </div>
       <div class="left-bottom-text">© 2026 Smart F&B Recommendation · AI Driven</div>
@@ -38,7 +58,7 @@
       <div class="login-form-wrapper">
         <div class="form-header">
           <h2 class="form-title">欢迎回来</h2>
-      <p class="form-subtitle">登录您的账号以继续</p>
+          <p class="form-subtitle">登录您的账号以继续</p>
         </div>
 
         <!-- 登录方式切换 -->
@@ -47,16 +67,22 @@
             class="tab-item"
             :class="{ active: loginMode === 'password' }"
             @click="switchMode('password')"
-          >密码登录</div>
-          <div
-            class="tab-item"
-            :class="{ active: loginMode === 'sms' }"
-            @click="switchMode('sms')"
-          >验证码登录</div>
+          >
+            密码登录
+          </div>
+          <div class="tab-item" :class="{ active: loginMode === 'sms' }" @click="switchMode('sms')">
+            验证码登录
+          </div>
         </div>
 
         <!-- 密码登录表单 -->
-        <el-form v-if="loginMode === 'password'" ref="pwdFormRef" :model="pwdForm" :rules="pwdRules" size="large">
+        <el-form
+          v-if="loginMode === 'password'"
+          ref="pwdFormRef"
+          :model="pwdForm"
+          :rules="pwdRules"
+          size="large"
+        >
           <el-form-item prop="username">
             <el-input
               v-model="pwdForm.username"
@@ -88,12 +114,19 @@
               :disabled="!captchaOk"
               class="submit-btn"
               @click="handlePwdLogin"
-            >登 录</el-button>
+              >登 录</el-button
+            >
           </el-form-item>
         </el-form>
 
         <!-- 验证码登录表单 -->
-        <el-form v-if="loginMode === 'sms'" ref="smsFormRef" :model="smsForm" :rules="smsRules" size="large">
+        <el-form
+          v-if="loginMode === 'sms'"
+          ref="smsFormRef"
+          :model="smsForm"
+          :rules="smsRules"
+          size="large"
+        >
           <el-form-item prop="phone">
             <el-input
               v-model="smsForm.phone"
@@ -131,7 +164,8 @@
               :disabled="!captchaOk"
               class="submit-btn"
               @click="handleSmsLogin"
-            >登 录</el-button>
+              >登 录</el-button
+            >
           </el-form-item>
         </el-form>
 
@@ -271,8 +305,8 @@ async function doLogin(username, password) {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 20% 30%, rgba(64,158,255,0.15) 0%, transparent 50%),
-    radial-gradient(circle at 80% 70%, rgba(103,194,58,0.1) 0%, transparent 50%);
+    radial-gradient(circle at 20% 30%, rgba(64, 158, 255, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(103, 194, 58, 0.1) 0%, transparent 50%);
 }
 .left-content {
   position: relative;
@@ -281,7 +315,9 @@ async function doLogin(username, password) {
   padding: 40px;
   max-width: 460px;
 }
-.brand-icon { margin-bottom: 28px; }
+.brand-icon {
+  margin-bottom: 28px;
+}
 .brand-title {
   font-size: 28px;
   font-weight: 700;
@@ -291,7 +327,7 @@ async function doLogin(username, password) {
 }
 .brand-desc {
   font-size: 15px;
-  color: rgba(255,255,255,0.65);
+  color: rgba(255, 255, 255, 0.65);
   line-height: 1.8;
   margin: 0 0 40px;
 }
@@ -302,14 +338,15 @@ async function doLogin(username, password) {
   gap: 14px;
 }
 .feature-item {
-  color: rgba(255,255,255,0.75);
+  color: rgba(255, 255, 255, 0.75);
   font-size: 14px;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 .feature-dot {
-  width: 6px; height: 6px;
+  width: 6px;
+  height: 6px;
   background: #409eff;
   border-radius: 50%;
   flex-shrink: 0;
@@ -317,9 +354,10 @@ async function doLogin(username, password) {
 .left-bottom-text {
   position: absolute;
   bottom: 24px;
-  left: 0; right: 0;
+  left: 0;
+  right: 0;
   text-align: center;
-  color: rgba(255,255,255,0.3);
+  color: rgba(255, 255, 255, 0.3);
   font-size: 12px;
 }
 /* ========== 右侧表单区 ========== */
@@ -336,13 +374,23 @@ async function doLogin(username, password) {
   padding: 48px 40px;
   background: #fff;
   border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
 }
-.form-header { text-align: center; margin-bottom: 32px; }
+.form-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
 .form-title {
-  font-size: 26px; font-weight: 700; color: #1a1a2e; margin: 0 0 8px;
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 8px;
 }
-.form-subtitle { font-size: 14px; color: #909399; margin: 0; }
+.form-subtitle {
+  font-size: 14px;
+  color: #909399;
+  margin: 0;
+}
 
 /* 登录方式切换 */
 .login-tabs {
@@ -351,41 +399,71 @@ async function doLogin(username, password) {
   margin-bottom: 28px;
 }
 .tab-item {
-  flex: 1; text-align: center; padding: 12px 0;
-  font-size: 14px; color: #909399; cursor: pointer;
-  position: relative; transition: color 0.3s;
+  flex: 1;
+  text-align: center;
+  padding: 12px 0;
+  font-size: 14px;
+  color: #909399;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.3s;
 }
 .tab-item.active {
-  color: #409eff; font-weight: 600;
+  color: #409eff;
+  font-weight: 600;
 }
 .tab-item.active::after {
   content: '';
   position: absolute;
-  bottom: -2px; left: 20%; right: 20%; height: 2px;
-  background: #409eff; border-radius: 1px;
+  bottom: -2px;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: #409eff;
+  border-radius: 1px;
 }
 
 /* 表单 */
 .submit-btn {
-  width: 100%; height: 44px; font-size: 16px;
-  letter-spacing: 4px; border-radius: 8px;
+  width: 100%;
+  height: 44px;
+  font-size: 16px;
+  letter-spacing: 4px;
+  border-radius: 8px;
 }
 
 .sms-row {
-  display: flex; gap: 10px; width: 100%;
+  display: flex;
+  gap: 10px;
+  width: 100%;
 }
-.sms-input { flex: 1; }
-.sms-btn { width: 110px; flex-shrink: 0; }
+.sms-input {
+  flex: 1;
+}
+.sms-btn {
+  width: 110px;
+  flex-shrink: 0;
+}
 
 .form-footer {
-  text-align: center; margin-top: 24px;
-  font-size: 12px; color: #c0c4cc;
+  text-align: center;
+  margin-top: 24px;
+  font-size: 12px;
+  color: #c0c4cc;
 }
 
 /* 响应式 */
 @media (max-width: 860px) {
-  .login-left { display: none; }
-  .login-right { min-width: auto; padding: 20px; }
-  .login-form-wrapper { width: 100%; max-width: 400px; }
+  .login-left {
+    display: none;
+  }
+  .login-right {
+    min-width: auto;
+    padding: 20px;
+  }
+  .login-form-wrapper {
+    width: 100%;
+    max-width: 400px;
+  }
 }
 </style>

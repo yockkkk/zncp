@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 const api = require('./utils/api')
 const auth = require('./utils/auth')
 

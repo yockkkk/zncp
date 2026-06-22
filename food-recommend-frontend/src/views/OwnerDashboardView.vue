@@ -29,7 +29,7 @@
     <!-- 热门菜品 -->
     <el-card shadow="never" class="section-card">
       <template #header>🔥 热门菜品 Top 10</template>
-      <el-table :data="data.topDishes || []" stripe v-loading="loading">
+      <el-table v-loading="loading" :data="data.topDishes || []" stripe>
         <el-table-column label="排名" width="60">
           <template #default="{ $index }">{{ $index + 1 }}</template>
         </el-table-column>
@@ -40,9 +40,9 @@
     </el-card>
 
     <!-- 服务员表现 -->
-    <el-card shadow="never" class="section-card" style="margin-top: 16px;">
+    <el-card shadow="never" class="section-card" style="margin-top: 16px">
       <template #header>👥 服务员表现</template>
-      <el-table :data="data.waiterStats || []" stripe v-loading="loading">
+      <el-table v-loading="loading" :data="data.waiterStats || []" stripe>
         <el-table-column prop="waiterName" label="姓名" min-width="120" />
         <el-table-column prop="totalRecs" label="总推荐" width="100" />
         <el-table-column prop="adoptedCount" label="被采纳" width="100" />
@@ -87,8 +87,14 @@ onMounted(fetchData)
 </script>
 
 <style scoped>
-.dashboard-page { width: 100%; }
-.page-title { font-size: 20px; margin-bottom: 20px; font-weight: 600; }
+.dashboard-page {
+  width: 100%;
+}
+.page-title {
+  font-size: 20px;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
 .stat-cards {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -105,16 +111,44 @@ onMounted(fetchData)
     grid-template-columns: 1fr;
   }
 }
-.stat-card { text-align: center; border-radius: 10px; border: 1px solid #ebeef5; }
+.stat-card {
+  text-align: center;
+  border-radius: 10px;
+  border: 1px solid #ebeef5;
+}
 .revenue-card {
   background: linear-gradient(135deg, #fffaf3 0%, #fff6e5 100%);
   border: 1px solid #ffe8cc !important;
 }
-.stat-num { font-size: 24px; font-weight: 700; color: #303133; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 48px; }
-.stat-num.green { color: #67c23a; }
-.stat-num.blue { color: #409eff; }
-.stat-num.orange { color: #e6a23c; }
-.stat-label { font-size: 13px; color: #909399; margin-top: 4px; }
-.section-card { margin-bottom: 0; border-radius: 10px; }
-.revenue-cell { font-weight: 600; color: #e6a23c; }
+.stat-num {
+  font-size: 24px;
+  font-weight: 700;
+  color: #303133;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 48px;
+}
+.stat-num.green {
+  color: #67c23a;
+}
+.stat-num.blue {
+  color: #409eff;
+}
+.stat-num.orange {
+  color: #e6a23c;
+}
+.stat-label {
+  font-size: 13px;
+  color: #909399;
+  margin-top: 4px;
+}
+.section-card {
+  margin-bottom: 0;
+  border-radius: 10px;
+}
+.revenue-cell {
+  font-weight: 600;
+  color: #e6a23c;
+}
 </style>

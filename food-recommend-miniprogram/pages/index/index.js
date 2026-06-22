@@ -61,6 +61,7 @@ Page({
   },
 
   // ===== 语音转文字 =====
+  // eslint-disable-next-line no-unused-vars
   processRecording(filePath) {
     wx.showLoading({ title: '识别语音中...' })
 
@@ -115,6 +116,7 @@ Page({
 
     this.setData({ processing: true })
     try {
+      // eslint-disable-next-line no-unused-vars
       const fd = new FormData()
       // 小程序端用 wx.request 直接调 voice recommend
       // 先做 Agent 0 提取标签展示

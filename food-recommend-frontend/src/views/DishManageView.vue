@@ -2,8 +2,14 @@
   <div class="dish-page">
     <div class="toolbar">
       <div class="toolbar-left">
-        <el-input v-model="search" placeholder="搜索菜品..." clearable style="width:240px" :prefix-icon="Search" />
-        <el-select v-model="filterCategory" placeholder="分类筛选" clearable style="width:140px">
+        <el-input
+          v-model="search"
+          placeholder="搜索菜品..."
+          clearable
+          style="width: 240px"
+          :prefix-icon="Search"
+        />
+        <el-select v-model="filterCategory" placeholder="分类筛选" clearable style="width: 140px">
           <el-option v-for="c in categories" :key="c" :label="c" :value="c" />
         </el-select>
       </div>
@@ -13,7 +19,13 @@
       </div>
     </div>
 
-    <el-table :data="filteredDishes" stripe v-loading="loadingTable" style="width:100%" row-key="id">
+    <el-table
+      v-loading="loadingTable"
+      :data="filteredDishes"
+      stripe
+      style="width: 100%"
+      row-key="id"
+    >
       <el-table-column prop="id" label="ID" width="60" />
       <el-table-column prop="name" label="菜品名称" width="140" />
       <el-table-column prop="category" label="分类" width="100" />
@@ -60,7 +72,12 @@
     </el-table>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑菜品' : '新增菜品'" width="600px" destroy-on-close>
+    <el-dialog
+      v-model="dialogVisible"
+      :title="editingId ? '编辑菜品' : '新增菜品'"
+      width="600px"
+      destroy-on-close
+    >
       <el-form :model="form" label-width="90px" label-position="left">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -72,24 +89,40 @@
         </el-row>
         <el-row :gutter="16">
           <el-col :span="8">
-            <el-form-item label="价格"><el-input-number v-model="form.price" :precision="2" :min="0" style="width:100%" /></el-form-item>
+            <el-form-item label="价格"
+              ><el-input-number v-model="form.price" :precision="2" :min="0" style="width: 100%"
+            /></el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="热量"><el-input-number v-model="form.calories" :min="0" style="width:100%" /></el-form-item>
+            <el-form-item label="热量"
+              ><el-input-number v-model="form.calories" :min="0" style="width: 100%"
+            /></el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="蛋白质"><el-input-number v-model="form.protein" :precision="1" :min="0" style="width:100%" /></el-form-item>
+            <el-form-item label="蛋白质"
+              ><el-input-number v-model="form.protein" :precision="1" :min="0" style="width: 100%"
+            /></el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="16">
           <el-col :span="8">
-            <el-form-item label="脂肪"><el-input-number v-model="form.fat" :precision="1" :min="0" style="width:100%" /></el-form-item>
+            <el-form-item label="脂肪"
+              ><el-input-number v-model="form.fat" :precision="1" :min="0" style="width: 100%"
+            /></el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="碳水"><el-input-number v-model="form.carbohydrate" :precision="1" :min="0" style="width:100%" /></el-form-item>
+            <el-form-item label="碳水"
+              ><el-input-number
+                v-model="form.carbohydrate"
+                :precision="1"
+                :min="0"
+                style="width: 100%"
+            /></el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="销量"><el-input-number v-model="form.sales" :min="0" style="width:100%" /></el-form-item>
+            <el-form-item label="销量"
+              ><el-input-number v-model="form.sales" :min="0" style="width: 100%"
+            /></el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="16">
@@ -100,15 +133,23 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="库存">
-              <el-input-number v-model="form.stock" :min="0" style="width:100%" />
+              <el-input-number v-model="form.stock" :min="0" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-form-item label="口味"><el-input v-model="form.taste" /></el-form-item>
-        <el-form-item label="适合人群"><el-input v-model="form.suitablePeople" placeholder="逗号分隔" /></el-form-item>
-        <el-form-item label="推荐场景"><el-input v-model="form.scene" placeholder="逗号分隔" /></el-form-item>
-        <el-form-item label="标签"><el-input v-model="form.tags" placeholder="逗号分隔" /></el-form-item>
-        <el-form-item label="描述"><el-input v-model="form.description" type="textarea" :rows="2" /></el-form-item>
+        <el-form-item label="适合人群"
+          ><el-input v-model="form.suitablePeople" placeholder="逗号分隔"
+        /></el-form-item>
+        <el-form-item label="推荐场景"
+          ><el-input v-model="form.scene" placeholder="逗号分隔"
+        /></el-form-item>
+        <el-form-item label="标签"
+          ><el-input v-model="form.tags" placeholder="逗号分隔"
+        /></el-form-item>
+        <el-form-item label="描述"
+          ><el-input v-model="form.description" type="textarea" :rows="2"
+        /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -136,11 +177,14 @@ const editingId = ref(null)
 
 const form = ref({})
 
-const categories = computed(() => [...new Set(dishes.value.map(d => d.category).filter(Boolean))])
+const categories = computed(() => [...new Set(dishes.value.map((d) => d.category).filter(Boolean))])
 const filteredDishes = computed(() => {
   let list = dishes.value
-  if (search.value) list = list.filter(d => d.name?.includes(search.value) || d.description?.includes(search.value))
-  if (filterCategory.value) list = list.filter(d => d.category === filterCategory.value)
+  if (search.value)
+    list = list.filter(
+      (d) => d.name?.includes(search.value) || d.description?.includes(search.value)
+    )
+  if (filterCategory.value) list = list.filter((d) => d.category === filterCategory.value)
   return list
 })
 
@@ -151,12 +195,23 @@ async function fetchDishes() {
     dishes.value = res.data || []
   } catch (e) {
     ElMessage.error('加载菜品失败')
-  } finally { loadingTable.value = false }
+  } finally {
+    loadingTable.value = false
+  }
 }
 
 function openAdd() {
   editingId.value = null
-  form.value = { price: 0, calories: 0, protein: 0, fat: 0, carbohydrate: 0, sales: 0, stock: 99, status: 1 }
+  form.value = {
+    price: 0,
+    calories: 0,
+    protein: 0,
+    fat: 0,
+    carbohydrate: 0,
+    sales: 0,
+    stock: 99,
+    status: 1
+  }
   dialogVisible.value = true
 }
 
@@ -180,7 +235,9 @@ async function doSave() {
     fetchDishes()
   } catch (e) {
     ElMessage.error(e.message || '保存失败')
-  } finally { saving.value = false }
+  } finally {
+    saving.value = false
+  }
 }
 
 async function handleStatusChange(row, val) {
@@ -198,15 +255,31 @@ async function doDelete(id) {
     await api.delete('/admin/dish/' + id)
     ElMessage.success('已删除')
     fetchDishes()
-  } catch (e) { ElMessage.error('删除失败') }
+  } catch (e) {
+    ElMessage.error('删除失败')
+  }
 }
 
 onMounted(fetchDishes)
 </script>
 
 <style scoped>
-.dish-page { width: 100%; }
-.toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; }
-.toolbar-left { display: flex; gap: 12px; }
-.toolbar-right { display: flex; gap: 8px; }
+.dish-page {
+  width: 100%;
+}
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+.toolbar-left {
+  display: flex;
+  gap: 12px;
+}
+.toolbar-right {
+  display: flex;
+  gap: 8px;
+}
 </style>

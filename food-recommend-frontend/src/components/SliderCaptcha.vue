@@ -1,6 +1,6 @@
 <template>
   <div class="slider-captcha" :class="{ verified: passed }">
-    <div v-if="!passed" class="slider-track" ref="trackRef">
+    <div v-if="!passed" ref="trackRef" class="slider-track">
       <div class="slider-bg" :style="{ width: sliderLeft + 'px' }"></div>
       <div class="slider-text" :class="{ moving: isMoving }">
         {{ isMoving ? '' : '按住滑块，拖动到最右边' }}
@@ -92,7 +92,9 @@ defineExpose({ reset })
 }
 .slider-bg {
   position: absolute;
-  left: 0; top: 0; bottom: 0;
+  left: 0;
+  top: 0;
+  bottom: 0;
   background: linear-gradient(90deg, #67c23a, #85ce61);
   border-radius: 19px 0 0 19px;
   transition: width 0.05s linear;
@@ -107,27 +109,45 @@ defineExpose({ reset })
   color: #909399;
   pointer-events: none;
 }
-.slider-text.moving { color: transparent; }
+.slider-text.moving {
+  color: transparent;
+}
 .slider-btn {
   position: absolute;
   top: 2px;
-  width: 34px; height: 34px;
+  width: 34px;
+  height: 34px;
   background: #fff;
   border-radius: 50%;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: grab;
   z-index: 2;
 }
-.slider-btn:active { cursor: grabbing; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
-.slider-arrow { color: #909399; font-size: 14px; font-weight: bold; }
-.verified-mark {
-  display: flex; align-items: center; gap: 6px;
-  height: 38px; justify-content: center;
-  color: #67c23a; font-size: 13px; font-weight: 500;
-  background: #f0f9eb; border-radius: 6px; border: 1px solid #c2e7b0;
+.slider-btn:active {
+  cursor: grabbing;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
-.verified { }
+.slider-arrow {
+  color: #909399;
+  font-size: 14px;
+  font-weight: bold;
+}
+.verified-mark {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  justify-content: center;
+  color: #67c23a;
+  font-size: 13px;
+  font-weight: 500;
+  background: #f0f9eb;
+  border-radius: 6px;
+  border: 1px solid #c2e7b0;
+}
+.verified {
+}
 </style>

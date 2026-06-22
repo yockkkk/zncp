@@ -64,6 +64,11 @@ const routes = [
         meta: { title: '员工管理', role: 'OWNER' }
       }
     ]
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: () => import('../views/NotFoundView.vue')
   }
 ]
 

@@ -1,6 +1,7 @@
 /**
  * 微信小程序认证工具
  */
+// eslint-disable-next-line no-unused-vars
 const api = require('./api')
 
 // 后端服务器地址（开发环境）

@@ -23,8 +23,14 @@ export const useRecommendStore = defineStore('recommend', () => {
   }
 
   return {
-    file, previewUrl, result, loading,
-    remark, finalRemark, selectedTags, currentStep,
+    file,
+    previewUrl,
+    result,
+    loading,
+    remark,
+    finalRemark,
+    selectedTags,
+    currentStep,
     reset
   }
 })

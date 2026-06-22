@@ -12,7 +12,7 @@
     <el-empty v-if="!loading && staff.length === 0" description="暂无员工，点击上方按钮添加" />
 
     <!-- 员工表格 -->
-    <el-table v-else :data="staff" stripe v-loading="loading" row-key="id" style="width:100%">
+    <el-table v-else v-loading="loading" :data="staff" stripe row-key="id" style="width: 100%">
       <el-table-column type="index" label="#" width="60" />
       <el-table-column prop="username" label="用户名" min-width="120" />
       <el-table-column prop="realName" label="姓名" min-width="120" />
@@ -36,8 +36,12 @@
       <el-table-column prop="createTime" label="创建时间" min-width="170" />
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
-          <el-button size="small" :type="row.status === 1 ? 'warning' : 'success'" plain
-            @click="toggleStatus(row)">
+          <el-button
+            size="small"
+            :type="row.status === 1 ? 'warning' : 'success'"
+            plain
+            @click="toggleStatus(row)"
+          >
             {{ row.status === 1 ? '禁用' : '启用' }}
           </el-button>
           <el-popconfirm title="确定删除该员工？" @confirm="doDelete(row.id)">
@@ -51,7 +55,7 @@
 
     <!-- 添加对话框 -->
     <el-dialog v-model="dialogVisible" title="添加员工" width="480px" destroy-on-close>
-      <el-form :model="form" :rules="formRules" ref="formRef" label-width="80px" status-icon>
+      <el-form ref="formRef" :model="form" :rules="formRules" label-width="80px" status-icon>
         <el-form-item label="用户名" prop="username">
           <el-input v-model="form.username" placeholder="登录账号" maxlength="20" show-word-limit />
         </el-form-item>
@@ -102,12 +106,18 @@ async function fetchStaff() {
   try {
     const res = await api.get('/owner/staff')
     staff.value = res.data || []
-  } catch (e) { /* handled */ }
-  finally { loading.value = false }
+  } catch (e) {
+    /* handled */
+  } finally {
+    loading.value = false
+  }
 }
 
 function openAdd() {
-  form.username = ''; form.password = ''; form.realName = ''; form.phone = ''
+  form.username = ''
+  form.password = ''
+  form.realName = ''
+  form.phone = ''
   dialogVisible.value = true
 }
 
@@ -120,24 +130,29 @@ async function doSave() {
     ElMessage.success('员工创建成功')
     dialogVisible.value = false
     fetchStaff()
-  } catch (e) { /* handled */ }
-  finally { saving.value = false }
+  } catch (e) {
+    /* handled */
+  } finally {
+    saving.value = false
+  }
 }
 
 async function toggleStatus(row) {
   const newStatus = row.status === 1 ? 0 : 1
   const action = newStatus === 1 ? '启用' : '禁用'
   try {
-    await ElMessageBox.confirm(
-      `确定要${action}员工「${row.realName}」吗？`,
-      `${action}确认`,
-      { confirmButtonText: `确认${action}`, cancelButtonText: '取消', type: 'warning' }
-    )
+    await ElMessageBox.confirm(`确定要${action}员工「${row.realName}」吗？`, `${action}确认`, {
+      confirmButtonText: `确认${action}`,
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
     await api.put(`/owner/staff/${row.id}/status`, { status: newStatus })
     row.status = newStatus
     ElMessage.success(`已${action}`)
   } catch (e) {
-    if (e !== 'cancel') { /* API error handled by interceptor */ }
+    if (e !== 'cancel') {
+      /* API error handled by interceptor */
+    }
   }
 }
 
@@ -147,19 +162,36 @@ async function doDelete(id) {
     await api.delete(`/owner/staff/${id}`)
     ElMessage.success('删除成功')
     fetchStaff()
-  } catch (e) { /* handled */ }
+  } catch (e) {
+    /* handled */
+  }
 }
 
 onMounted(fetchStaff)
 </script>
 
 <style scoped>
-.staff-page { width: 100%; }
+.staff-page {
+  width: 100%;
+}
 .page-header {
-  display: flex; justify-content: space-between; align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 24px;
 }
-.header-info { display: flex; align-items: baseline; gap: 12px; }
-.page-title { font-size: 20px; margin: 0; font-weight: 600; }
-.staff-count { font-size: 13px; color: #909399; }
+.header-info {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.page-title {
+  font-size: 20px;
+  margin: 0;
+  font-weight: 600;
+}
+.staff-count {
+  font-size: 13px;
+  color: #909399;
+}
 </style>

@@ -22,22 +22,34 @@
 
     <div class="toolbar">
       <span class="hint">最近 50 条推荐记录 · 点击行查看溯源详情</span>
-      <el-button :icon="RefreshRight" @click="fetchHistory" :loading="loading">刷新</el-button>
+      <el-button :icon="RefreshRight" :loading="loading" @click="fetchHistory">刷新</el-button>
     </div>
 
-    <el-table :data="records" stripe v-loading="loading" style="width:100%" row-key="id"
-      @row-click="openDetail" highlight-current-row>
+    <el-table
+      v-loading="loading"
+      :data="records"
+      stripe
+      style="width: 100%"
+      row-key="id"
+      highlight-current-row
+      @row-click="openDetail"
+    >
       <el-table-column prop="id" label="记录ID" width="80" />
       <el-table-column label="图片" width="100">
         <template #default="{ row }">
-          <el-image v-if="row.imageUrl" :src="row.imageUrl" :preview-src-list="[row.imageUrl]"
-            fit="cover" style="width:60px;height:60px;border-radius:6px" />
+          <el-image
+            v-if="row.imageUrl"
+            :src="row.imageUrl"
+            :preview-src-list="[row.imageUrl]"
+            fit="cover"
+            style="width: 60px; height: 60px; border-radius: 6px"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="用户画像" min-width="180">
         <template #default="{ row }">
-          <div class="profile-preview" v-if="row.userProfileJson">
+          <div v-if="row.userProfileJson" class="profile-preview">
             {{ formatProfile(row.userProfileJson) }}
           </div>
           <span v-else>-</span>
@@ -45,11 +57,16 @@
       </el-table-column>
       <el-table-column label="推荐菜品" min-width="160">
         <template #default="{ row }">
-          <div class="dish-preview" v-if="row.recommendedDishIds">
+          <div v-if="row.recommendedDishIds" class="dish-preview">
             <template v-if="parseDishes(row.resultJson).length">
-              <el-tag v-for="d in parseDishes(row.resultJson).slice(0, 5)" :key="d.name"
-                size="small" :type="isAdoptedDish(row, d.dishId) ? 'success' : 'warning'"
-                effect="plain" round>
+              <el-tag
+                v-for="d in parseDishes(row.resultJson).slice(0, 5)"
+                :key="d.name"
+                size="small"
+                :type="isAdoptedDish(row, d.dishId) ? 'success' : 'warning'"
+                effect="plain"
+                round
+              >
                 {{ d.name }}{{ isAdoptedDish(row, d.dishId) ? ' ✓' : '' }}
               </el-tag>
             </template>
@@ -72,54 +89,125 @@
     </el-table>
 
     <!-- ====== 详情弹窗 ====== -->
-    <el-dialog v-model="drawerVisible" :title="'推荐详情 #' + (detail?.id || '')" width="800px" top="5vh" destroy-on-close>
+    <el-dialog
+      v-model="drawerVisible"
+      :title="'推荐详情 #' + (detail?.id || '')"
+      width="800px"
+      top="5vh"
+      destroy-on-close
+    >
       <template v-if="detail">
         <div class="detail-grid">
           <div class="detail-left">
             <div class="trace-section">
               <h4 class="sec-title">顾客画像</h4>
               <el-descriptions :column="2" border size="small">
-                <el-descriptions-item label="用餐场景">{{ profileField('diningScene') }}</el-descriptions-item>
-                <el-descriptions-item label="用餐人数">{{ profileField('peopleCount', '') || '-' }}人</el-descriptions-item>
-                <el-descriptions-item label="消费水平">{{ profileField('estimatedConsumptionLevel') }}</el-descriptions-item>
-                <el-descriptions-item label="用餐时段">{{ profileField('mealTime') || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="用餐场景">{{
+                  profileField('diningScene')
+                }}</el-descriptions-item>
+                <el-descriptions-item label="用餐人数"
+                  >{{ profileField('peopleCount', '') || '-' }}人</el-descriptions-item
+                >
+                <el-descriptions-item label="消费水平">{{
+                  profileField('estimatedConsumptionLevel')
+                }}</el-descriptions-item>
+                <el-descriptions-item label="用餐时段">{{
+                  profileField('mealTime') || '-'
+                }}</el-descriptions-item>
                 <el-descriptions-item label="口味偏好" :span="2">
-                  {{ profileField('tastePreferences') || profileField('possiblePreferences') || '-' }}
+                  {{
+                    profileField('tastePreferences') || profileField('possiblePreferences') || '-'
+                  }}
                 </el-descriptions-item>
               </el-descriptions>
             </div>
 
             <div v-if="hasGuests(detail)" class="trace-section">
               <h4 class="sec-title">各顾客明细</h4>
-              <div class="detail-guests-list" style="max-height: 250px; overflow-y: auto;">
-                <div v-for="guest in getGuestsList(detail)" :key="guest.name" class="detail-guest-item"
-                     style="background: #fafbfc; border: 1px solid #ebeef5; border-radius: 6px; padding: 10px; margin-bottom: 8px;">
-                  <div style="font-size: 13px; font-weight: 600; color: #1d3461; margin-bottom: 6px;">👤 {{ guest.name }}</div>
-                  <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-                    <el-tag v-if="guest.tastes && guest.tastes.length" size="small" type="warning">喜欢: {{ guest.tastes.join('、') }}</el-tag>
-                    <el-tag v-if="guest.avoidIngredients && guest.avoidIngredients.length" size="small" type="danger">忌口: {{ guest.avoidIngredients.join('、') }}</el-tag>
-                    <el-tag v-if="guest.allergens && guest.allergens.length" size="small" type="danger">过敏: {{ guest.allergens.join('、') }}</el-tag>
-                    <el-tag v-if="guest.diseases && guest.diseases.length" size="small" type="danger">禁忌: {{ guest.diseases.join('、') }}</el-tag>
-                    <el-tag v-if="guest.dietLifestyles && guest.dietLifestyles.length" size="small" type="primary">习惯: {{ guest.dietLifestyles.join('、') }}</el-tag>
-                    <span v-if="!guest.tastes?.length && !guest.avoidIngredients?.length && !guest.allergens?.length && !guest.diseases?.length && !guest.dietLifestyles?.length" style="font-size: 12px; color: #c0c4cc;">无特殊要求</span>
+              <div class="detail-guests-list" style="max-height: 250px; overflow-y: auto">
+                <div
+                  v-for="guest in getGuestsList(detail)"
+                  :key="guest.name"
+                  class="detail-guest-item"
+                  style="
+                    background: #fafbfc;
+                    border: 1px solid #ebeef5;
+                    border-radius: 6px;
+                    padding: 10px;
+                    margin-bottom: 8px;
+                  "
+                >
+                  <div
+                    style="font-size: 13px; font-weight: 600; color: #1d3461; margin-bottom: 6px"
+                  >
+                    👤 {{ guest.name }}
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px">
+                    <el-tag v-if="guest.tastes && guest.tastes.length" size="small" type="warning"
+                      >喜欢: {{ guest.tastes.join('、') }}</el-tag
+                    >
+                    <el-tag
+                      v-if="guest.avoidIngredients && guest.avoidIngredients.length"
+                      size="small"
+                      type="danger"
+                      >忌口: {{ guest.avoidIngredients.join('、') }}</el-tag
+                    >
+                    <el-tag
+                      v-if="guest.allergens && guest.allergens.length"
+                      size="small"
+                      type="danger"
+                      >过敏: {{ guest.allergens.join('、') }}</el-tag
+                    >
+                    <el-tag
+                      v-if="guest.diseases && guest.diseases.length"
+                      size="small"
+                      type="danger"
+                      >禁忌: {{ guest.diseases.join('、') }}</el-tag
+                    >
+                    <el-tag
+                      v-if="guest.dietLifestyles && guest.dietLifestyles.length"
+                      size="small"
+                      type="primary"
+                      >习惯: {{ guest.dietLifestyles.join('、') }}</el-tag
+                    >
+                    <span
+                      v-if="
+                        !guest.tastes?.length &&
+                        !guest.avoidIngredients?.length &&
+                        !guest.allergens?.length &&
+                        !guest.diseases?.length &&
+                        !guest.dietLifestyles?.length
+                      "
+                      style="font-size: 12px; color: #c0c4cc"
+                      >无特殊要求</span
+                    >
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="trace-section" v-if="detail.sceneImageUrl || detail.imageUrl">
+            <div v-if="detail.sceneImageUrl || detail.imageUrl" class="trace-section">
               <h4 class="sec-title">场景照片</h4>
-              <el-image :src="detail.sceneImageUrl || detail.imageUrl"
+              <el-image
+                :src="detail.sceneImageUrl || detail.imageUrl"
                 :preview-src-list="[detail.sceneImageUrl || detail.imageUrl]"
-                fit="contain" style="max-height:200px;border-radius:8px" />
+                fit="contain"
+                style="max-height: 200px; border-radius: 8px"
+              />
             </div>
 
-            <div class="trace-section" v-if="detail.feedbacks && detail.feedbacks.length > 0">
+            <div v-if="detail.feedbacks && detail.feedbacks.length > 0" class="trace-section">
               <h4 class="sec-title">采纳记录</h4>
               <el-timeline>
-                <el-timeline-item v-for="fb in detail.feedbacks" :key="fb.id"
-                  :timestamp="fb.createTime || '-'" type="success" placement="top">
-                  采纳了 <strong>{{ getDishName(detail, fb.adoptedDishId) }}</strong> × {{ fb.quantity || 1 }} 份
+                <el-timeline-item
+                  v-for="fb in detail.feedbacks"
+                  :key="fb.id"
+                  :timestamp="fb.createTime || '-'"
+                  type="success"
+                  placement="top"
+                >
+                  采纳了 <strong>{{ getDishName(detail, fb.adoptedDishId) }}</strong> ×
+                  {{ fb.quantity || 1 }} 份
                 </el-timeline-item>
               </el-timeline>
             </div>
@@ -128,15 +216,27 @@
           <div class="detail-right">
             <h4 class="sec-title">
               推荐菜品
-              <el-tag v-if="getAdoptedCount(detail) > 0" type="success" size="small" style="margin-left:8px">
+              <el-tag
+                v-if="getAdoptedCount(detail) > 0"
+                type="success"
+                size="small"
+                style="margin-left: 8px"
+              >
                 {{ getAdoptedCount(detail) }}道已采纳
               </el-tag>
             </h4>
-            <div v-for="dish in parseDishesWithDetail(detail.resultJson)" :key="dish.dishId" class="detail-dish-card">
+            <div
+              v-for="dish in parseDishesWithDetail(detail.resultJson)"
+              :key="dish.dishId"
+              class="detail-dish-card"
+            >
               <div class="dd-header">
                 <span class="dd-rank">{{ findRank(dish) }}</span>
                 <strong>{{ dish.name }}</strong>
-                <el-tag :type="dish.score >= 85 ? 'danger' : dish.score >= 70 ? 'warning' : 'info'" size="small">
+                <el-tag
+                  :type="dish.score >= 85 ? 'danger' : dish.score >= 70 ? 'warning' : 'info'"
+                  size="small"
+                >
                   {{ dish.score ?? '-' }}分
                 </el-tag>
                 <el-tag size="small">¥{{ dish.price ?? '-' }}</el-tag>
@@ -145,9 +245,11 @@
                 </el-tag>
               </div>
               <div class="dd-reason">{{ dish.reason || '暂无推荐理由' }}</div>
-              <div class="dd-extra" v-if="dish.nutritionComment || dish.costPerformanceComment">
+              <div v-if="dish.nutritionComment || dish.costPerformanceComment" class="dd-extra">
                 <span v-if="dish.nutritionComment">营养：{{ dish.nutritionComment }}</span>
-                <span v-if="dish.costPerformanceComment"> · 性价比：{{ dish.costPerformanceComment }}</span>
+                <span v-if="dish.costPerformanceComment">
+                  · 性价比：{{ dish.costPerformanceComment }}</span
+                >
               </div>
             </div>
           </div>
@@ -169,7 +271,7 @@ const detail = ref(null)
 const revenue = ref(0)
 
 const totalAdopted = computed(() => {
-  return records.value.filter(r => r.adopted === 1).length
+  return records.value.filter((r) => r.adopted === 1).length
 })
 
 const adoptionRate = computed(() => {
@@ -183,8 +285,11 @@ async function fetchHistory() {
     const res = await api.get('/waiter/history')
     records.value = res.data || []
     await fetchRevenue()
-  } catch (e) { /* error handled by interceptor */
-  } finally { loading.value = false }
+  } catch (e) {
+    /* error handled by interceptor */
+  } finally {
+    loading.value = false
+  }
 }
 
 async function fetchRevenue() {
@@ -206,25 +311,34 @@ async function openDetail(row) {
     const res = await api.get(`/waiter/history/${row.id}`)
     detail.value = res.data
     drawerVisible.value = true
-  } catch (e) { /* handled */ }
+  } catch (e) {
+    /* handled */
+  }
 }
 
 function formatProfile(json) {
   try {
     const p = typeof json === 'string' ? JSON.parse(json) : json
-    return [p.diningScene, p.estimatedConsumptionLevel, `${p.peopleCount || '?'}人`].filter(Boolean).join(' · ')
-  } catch { return '' }
+    return [p.diningScene, p.estimatedConsumptionLevel, `${p.peopleCount || '?'}人`]
+      .filter(Boolean)
+      .join(' · ')
+  } catch {
+    return ''
+  }
 }
 
 function profileField(key, suffix = '') {
   try {
-    const p = typeof detail.value?.userProfileJson === 'string'
-      ? JSON.parse(detail.value.userProfileJson)
-      : (detail.value?.userProfileJson || {})
+    const p =
+      typeof detail.value?.userProfileJson === 'string'
+        ? JSON.parse(detail.value.userProfileJson)
+        : detail.value?.userProfileJson || {}
     const v = p[key]
     if (Array.isArray(v)) return v.join(', ') || '-'
     return v ? v + suffix : '-'
-  } catch { return '-' }
+  } catch {
+    return '-'
+  }
 }
 
 function parseDishes(json) {
@@ -232,10 +346,12 @@ function parseDishes(json) {
     const arr = typeof json === 'string' ? JSON.parse(json) : json
     if (Array.isArray(arr)) return arr
     if (arr && Array.isArray(arr.recommendations)) {
-      return arr.recommendations.map(r => ({ dishId: r.dishId, name: r.name }))
+      return arr.recommendations.map((r) => ({ dishId: r.dishId, name: r.name }))
     }
     return []
-  } catch { return [] }
+  } catch {
+    return []
+  }
 }
 
 function parseDishesWithDetail(json) {
@@ -244,7 +360,9 @@ function parseDishesWithDetail(json) {
     if (Array.isArray(arr)) return arr
     if (arr && Array.isArray(arr.recommendations)) return arr.recommendations
     return []
-  } catch { return [] }
+  } catch {
+    return []
+  }
 }
 
 function getFeedbacks(row) {
@@ -252,7 +370,11 @@ function getFeedbacks(row) {
 }
 
 function getAdoptedDishIds(row) {
-  return new Set(getFeedbacks(row).map(f => f.adoptedDishId).filter(Boolean))
+  return new Set(
+    getFeedbacks(row)
+      .map((f) => f.adoptedDishId)
+      .filter(Boolean)
+  )
 }
 
 function isAdoptedDish(row, dishId) {
@@ -264,13 +386,13 @@ function getAdoptedCount(row) {
 }
 
 function getAdoptedQuantity(row, dishId) {
-  const fb = getFeedbacks(row).find(f => f.adoptedDishId === dishId)
+  const fb = getFeedbacks(row).find((f) => f.adoptedDishId === dishId)
   return fb?.quantity || 1
 }
 
 function getDishName(row, dishId) {
   const dishes = parseDishesWithDetail(row.resultJson)
-  const d = dishes.find(x => x.dishId === dishId)
+  const d = dishes.find((x) => x.dishId === dishId)
   return d?.name || `菜品#${dishId}`
 }
 
@@ -279,65 +401,117 @@ function findRank(dish) {
   return emojis[dish.rank - 1] || `#${dish.rank}`
 }
 
+// eslint-disable-next-line no-unused-vars
 function formatJson(json) {
   try {
     const obj = typeof json === 'string' ? JSON.parse(json) : json
     return JSON.stringify(obj, null, 2)
-  } catch { return json || '-' }
+  } catch {
+    return json || '-'
+  }
 }
 
 function hasGuests(row) {
   try {
-    const p = typeof row?.userProfileJson === 'string'
-      ? JSON.parse(row.userProfileJson)
-      : (row?.userProfileJson || {})
+    const p =
+      typeof row?.userProfileJson === 'string'
+        ? JSON.parse(row.userProfileJson)
+        : row?.userProfileJson || {}
     return Array.isArray(p.guests) && p.guests.length > 0
-  } catch { return false }
+  } catch {
+    return false
+  }
 }
 
 function getGuestsList(row) {
   try {
-    const p = typeof row?.userProfileJson === 'string'
-      ? JSON.parse(row.userProfileJson)
-      : (row?.userProfileJson || {})
+    const p =
+      typeof row?.userProfileJson === 'string'
+        ? JSON.parse(row.userProfileJson)
+        : row?.userProfileJson || {}
     return p.guests || []
-  } catch { return [] }
+  } catch {
+    return []
+  }
 }
 
 onActivated(fetchHistory)
 </script>
 
 <style scoped>
-.history-page { width: 100%; }
-.toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.hint { color: #909399; font-size: 13px; }
-.profile-preview { font-size: 13px; color: #606266; }
-.dish-preview { display: flex; flex-wrap: wrap; gap: 4px; }
+.history-page {
+  width: 100%;
+}
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.hint {
+  color: #909399;
+  font-size: 13px;
+}
+.profile-preview {
+  font-size: 13px;
+  color: #606266;
+}
+.dish-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
 
-.trace-section { margin-bottom: 20px; }
+.trace-section {
+  margin-bottom: 20px;
+}
 .sec-title {
-  font-size: 15px; font-weight: 600; color: #303133;
-  margin: 0 0 10px 0; padding-bottom: 6px;
-  border-bottom: 2px solid #409eff; display: flex; align-items: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0 0 10px 0;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #409eff;
+  display: flex;
+  align-items: center;
 }
 .detail-grid {
-  display: grid; grid-template-columns: 320px 1fr; gap: 24px;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
 }
 .detail-dish-card {
-  background: #fafbfc; border: 1px solid #ebeef5; border-radius: 8px;
-  padding: 14px; margin-bottom: 10px;
+  background: #fafbfc;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 10px;
 }
 .dd-header {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
 }
-.dd-header strong { font-size: 14px; }
-.dd-rank { font-size: 18px; }
+.dd-header strong {
+  font-size: 14px;
+}
+.dd-rank {
+  font-size: 18px;
+}
 .dd-reason {
-  font-size: 13px; color: #303133; line-height: 1.6;
-  padding: 8px 12px; background: #fff; border-radius: 6px; margin-bottom: 6px;
+  font-size: 13px;
+  color: #303133;
+  line-height: 1.6;
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 6px;
+  margin-bottom: 6px;
 }
 .dd-extra {
-  font-size: 12px; color: #909399;
+  font-size: 12px;
+  color: #909399;
 }
 .performance-board {
   display: grid;
@@ -376,7 +550,13 @@ onActivated(fetchHistory)
   font-weight: 700;
   color: #303133;
 }
-.p-val.green { color: #67c23a; }
-.p-val.blue { color: #409eff; }
-.p-val.orange { color: #e6a23c; }
+.p-val.green {
+  color: #67c23a;
+}
+.p-val.blue {
+  color: #409eff;
+}
+.p-val.orange {
+  color: #e6a23c;
+}
 </style>

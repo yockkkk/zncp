@@ -5,6 +5,7 @@ const auth = require('./auth')
 
 const BASE = 'http://localhost:8080/api'
 
+// eslint-disable-next-line no-unused-vars
 function request(method, path, data, options = {}) {
   return new Promise((resolve, reject) => {
     const token = auth.getToken()

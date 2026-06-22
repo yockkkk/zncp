@@ -16,12 +16,21 @@
       <div class="tag-row align-center">
         <span class="tag-label">手机号</span>
         <div class="phone-input-wrap">
-          <el-input v-model="selected.phone" placeholder="输入11位手机号查询长期记忆" size="small" clearable style="width: 220px" @input="onPhoneInput">
+          <el-input
+            v-model="selected.phone"
+            placeholder="输入11位手机号查询长期记忆"
+            size="small"
+            clearable
+            style="width: 220px"
+            @input="onPhoneInput"
+          >
             <template #prefix>
               <span class="phone-emoji">📱</span>
             </template>
           </el-input>
-          <span v-if="phoneLoading" class="phone-loading-text"><el-icon class="is-loading"><Loading /></el-icon></span>
+          <span v-if="phoneLoading" class="phone-loading-text"
+            ><el-icon class="is-loading"><Loading /></el-icon
+          ></span>
         </div>
       </div>
 
@@ -29,26 +38,68 @@
       <div v-if="historyProfile" class="history-profile-card">
         <div class="h-card-header">
           <span class="h-card-title">🧠 长期记忆 (历史画像)</span>
-          <el-button v-if="hasHistory" type="success" size="small" plain round @click="applyHistoryTastes">
+          <el-button
+            v-if="hasHistory"
+            type="success"
+            size="small"
+            plain
+            round
+            @click="applyHistoryTastes"
+          >
             一键套用
           </el-button>
         </div>
         <div class="h-card-body">
           <p class="desc">{{ historyProfile.historyDescription }}</p>
           <div class="history-tags">
-            <el-tag v-for="taste in historyProfile.historyTastes" :key="'h-taste-'+taste" size="small" type="success" effect="plain" class="h-tag">
+            <el-tag
+              v-for="taste in historyProfile.historyTastes"
+              :key="'h-taste-' + taste"
+              size="small"
+              type="success"
+              effect="plain"
+              class="h-tag"
+            >
               {{ taste }}
             </el-tag>
-            <el-tag v-for="avoid in historyProfile.consolidatedAvoids" :key="'h-avoid-'+avoid" size="small" type="danger" effect="plain" class="h-tag">
+            <el-tag
+              v-for="avoid in historyProfile.consolidatedAvoids"
+              :key="'h-avoid-' + avoid"
+              size="small"
+              type="danger"
+              effect="plain"
+              class="h-tag"
+            >
               忌口: {{ avoid }}
             </el-tag>
-            <el-tag v-for="allergen in historyProfile.consolidatedAllergens" :key="'h-allergen-'+allergen" size="small" type="danger" effect="plain" class="h-tag">
+            <el-tag
+              v-for="allergen in historyProfile.consolidatedAllergens"
+              :key="'h-allergen-' + allergen"
+              size="small"
+              type="danger"
+              effect="plain"
+              class="h-tag"
+            >
               过敏: {{ allergen }}
             </el-tag>
-            <el-tag v-for="disease in historyProfile.consolidatedDiseases" :key="'h-disease-'+disease" size="small" type="warning" effect="plain" class="h-tag">
+            <el-tag
+              v-for="disease in historyProfile.consolidatedDiseases"
+              :key="'h-disease-' + disease"
+              size="small"
+              type="warning"
+              effect="plain"
+              class="h-tag"
+            >
               禁忌: {{ disease }}
             </el-tag>
-            <el-tag v-for="lifestyle in historyProfile.consolidatedDietLifestyles" :key="'h-lifestyle-'+lifestyle" size="small" type="primary" effect="plain" class="h-tag">
+            <el-tag
+              v-for="lifestyle in historyProfile.consolidatedDietLifestyles"
+              :key="'h-lifestyle-' + lifestyle"
+              size="small"
+              type="primary"
+              effect="plain"
+              class="h-tag"
+            >
               {{ lifestyle }}
             </el-tag>
           </div>
@@ -59,10 +110,14 @@
       <div class="tag-row">
         <span class="tag-label">用餐人数</span>
         <div class="tag-group">
-          <el-tag v-for="opt in PEOPLE_OPTIONS" :key="opt.value"
+          <el-tag
+            v-for="opt in PEOPLE_OPTIONS"
+            :key="opt.value"
             :type="selected.peopleCount === opt.value ? 'primary' : 'info'"
             :effect="selected.peopleCount === opt.value ? 'dark' : 'plain'"
-            class="tag-item" @click="selected.peopleCount = opt.value">
+            class="tag-item"
+            @click="selected.peopleCount = opt.value"
+          >
             {{ opt.label }}
           </el-tag>
         </div>
@@ -72,10 +127,14 @@
       <div class="tag-row">
         <span class="tag-label">用餐场景</span>
         <div class="tag-group">
-          <el-tag v-for="opt in SCENE_OPTIONS" :key="opt.value"
+          <el-tag
+            v-for="opt in SCENE_OPTIONS"
+            :key="opt.value"
             :type="selected.diningScene === opt.value ? 'success' : 'info'"
             :effect="selected.diningScene === opt.value ? 'dark' : 'plain'"
-            class="tag-item" @click="selected.diningScene = opt.value">
+            class="tag-item"
+            @click="selected.diningScene = opt.value"
+          >
             {{ opt.label }}
           </el-tag>
         </div>
@@ -85,10 +144,14 @@
       <div class="tag-row">
         <span class="tag-label">口味偏好</span>
         <div class="tag-group">
-          <el-tag v-for="opt in TASTE_OPTIONS" :key="opt.value"
+          <el-tag
+            v-for="opt in TASTE_OPTIONS"
+            :key="opt.value"
             :type="selected.tastePreferences.includes(opt.value) ? 'warning' : 'info'"
             :effect="selected.tastePreferences.includes(opt.value) ? 'dark' : 'plain'"
-            class="tag-item" @click="toggleTaste(opt.value)">
+            class="tag-item"
+            @click="toggleTaste(opt.value)"
+          >
             {{ opt.label }}
           </el-tag>
         </div>
@@ -98,10 +161,14 @@
       <div class="tag-row">
         <span class="tag-label">忌口不吃</span>
         <div class="tag-group">
-          <el-tag v-for="opt in GUEST_AVOID_OPTIONS" :key="opt"
+          <el-tag
+            v-for="opt in GUEST_AVOID_OPTIONS"
+            :key="opt"
             :type="selected.avoidIngredients.includes(opt) ? 'danger' : 'info'"
             :effect="selected.avoidIngredients.includes(opt) ? 'dark' : 'plain'"
-            class="tag-item" @click="toggleAvoid(opt)">
+            class="tag-item"
+            @click="toggleAvoid(opt)"
+          >
             {{ opt }}
           </el-tag>
         </div>
@@ -111,10 +178,14 @@
       <div class="tag-row">
         <span class="tag-label">过敏源</span>
         <div class="tag-group">
-          <el-tag v-for="opt in GUEST_ALLERGEN_OPTIONS" :key="opt"
+          <el-tag
+            v-for="opt in GUEST_ALLERGEN_OPTIONS"
+            :key="opt"
             :type="selected.allergens.includes(opt) ? 'danger' : 'info'"
             :effect="selected.allergens.includes(opt) ? 'dark' : 'plain'"
-            class="tag-item" @click="toggleAllergen(opt)">
+            class="tag-item"
+            @click="toggleAllergen(opt)"
+          >
             {{ opt }}
           </el-tag>
         </div>
@@ -124,10 +195,14 @@
       <div class="tag-row">
         <span class="tag-label">疾病禁忌</span>
         <div class="tag-group">
-          <el-tag v-for="opt in GUEST_DISEASE_OPTIONS" :key="opt"
+          <el-tag
+            v-for="opt in GUEST_DISEASE_OPTIONS"
+            :key="opt"
             :type="selected.diseases.includes(opt) ? 'danger' : 'info'"
             :effect="selected.diseases.includes(opt) ? 'dark' : 'plain'"
-            class="tag-item" @click="toggleDisease(opt)">
+            class="tag-item"
+            @click="toggleDisease(opt)"
+          >
             {{ opt }}
           </el-tag>
         </div>
@@ -137,10 +212,14 @@
       <div class="tag-row">
         <span class="tag-label">预算等级</span>
         <div class="tag-group">
-          <el-tag v-for="opt in BUDGET_OPTIONS" :key="opt.value"
+          <el-tag
+            v-for="opt in BUDGET_OPTIONS"
+            :key="opt.value"
             :type="selected.budgetLevel === opt.value ? 'danger' : 'info'"
             :effect="selected.budgetLevel === opt.value ? 'dark' : 'plain'"
-            class="tag-item" @click="selected.budgetLevel = opt.value">
+            class="tag-item"
+            @click="selected.budgetLevel = opt.value"
+          >
             {{ opt.label }}
           </el-tag>
         </div>
@@ -150,10 +229,14 @@
       <div class="tag-row">
         <span class="tag-label">饮食限制</span>
         <div class="tag-group">
-          <el-tag v-for="opt in DIETARY_OPTIONS" :key="opt.value"
+          <el-tag
+            v-for="opt in DIETARY_OPTIONS"
+            :key="opt.value"
             :type="selected.dietaryRestriction === opt.value ? 'primary' : 'info'"
             :effect="selected.dietaryRestriction === opt.value ? 'dark' : 'plain'"
-            class="tag-item" @click="selected.dietaryRestriction = opt.value">
+            class="tag-item"
+            @click="selected.dietaryRestriction = opt.value"
+          >
             {{ opt.label }}
           </el-tag>
         </div>
@@ -163,10 +246,14 @@
       <div class="tag-row">
         <span class="tag-label">用餐时段</span>
         <div class="tag-group">
-          <el-tag v-for="opt in MEAL_TIME_OPTIONS" :key="opt.value"
+          <el-tag
+            v-for="opt in MEAL_TIME_OPTIONS"
+            :key="opt.value"
             :type="selected.mealTime === opt.value ? 'success' : 'info'"
             :effect="selected.mealTime === opt.value ? 'dark' : 'plain'"
-            class="tag-item" @click="selected.mealTime = opt.value">
+            class="tag-item"
+            @click="selected.mealTime = opt.value"
+          >
             {{ opt.label }}
           </el-tag>
         </div>
@@ -182,21 +269,36 @@
             <el-col :span="8">
               <el-form-item label="用餐场景">
                 <el-select v-model="selected.diningScene" placeholder="选择场景">
-                  <el-option v-for="opt in SCENE_OPTIONS" :key="opt.value" :label="opt.label" :value="opt.value" />
+                  <el-option
+                    v-for="opt in SCENE_OPTIONS"
+                    :key="opt.value"
+                    :label="opt.label"
+                    :value="opt.value"
+                  />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="8">
               <el-form-item label="预算等级">
                 <el-select v-model="selected.budgetLevel" placeholder="选择预算">
-                  <el-option v-for="opt in BUDGET_OPTIONS_NO_ALL" :key="opt.value" :label="opt.label" :value="opt.value" />
+                  <el-option
+                    v-for="opt in BUDGET_OPTIONS_NO_ALL"
+                    :key="opt.value"
+                    :label="opt.label"
+                    :value="opt.value"
+                  />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="8">
               <el-form-item label="用餐时段">
                 <el-select v-model="selected.mealTime" placeholder="选择时段">
-                  <el-option v-for="opt in MEAL_TIME_OPTIONS" :key="opt.value" :label="opt.label" :value="opt.value" />
+                  <el-option
+                    v-for="opt in MEAL_TIME_OPTIONS"
+                    :key="opt.value"
+                    :label="opt.label"
+                    :value="opt.value"
+                  />
                 </el-select>
               </el-form-item>
             </el-col>
@@ -212,17 +314,28 @@
         </div>
 
         <el-collapse v-model="activeGuestNames" class="guest-collapse">
-          <el-collapse-item v-for="(guest, idx) in selected.guests" :key="idx" :name="idx.toString()">
+          <el-collapse-item
+            v-for="(guest, idx) in selected.guests"
+            :key="idx"
+            :name="idx.toString()"
+          >
             <template #title>
               <div class="guest-title-header">
                 <span class="guest-name-text">👤 {{ guest.name }}</span>
-                <el-button type="danger" size="small" link @click.stop="removeGuest(idx)">删除</el-button>
+                <el-button type="danger" size="small" link @click.stop="removeGuest(idx)"
+                  >删除</el-button
+                >
               </div>
             </template>
             <div class="guest-form">
               <div class="guest-input-row">
                 <span class="g-label">顾客称呼</span>
-                <el-input v-model="guest.name" size="small" placeholder="如：顾客A、王先生" style="width: 150px" />
+                <el-input
+                  v-model="guest.name"
+                  size="small"
+                  placeholder="如：顾客A、王先生"
+                  style="width: 150px"
+                />
               </div>
 
               <!-- 忌口/不吃 -->
@@ -314,7 +427,7 @@ const BUDGET_OPTIONS = [
   { label: '不限', value: '不限' }
 ]
 
-const BUDGET_OPTIONS_NO_ALL = BUDGET_OPTIONS.filter(o => o.value !== '不限')
+const BUDGET_OPTIONS_NO_ALL = BUDGET_OPTIONS.filter((o) => o.value !== '不限')
 
 const DIETARY_OPTIONS = [
   { label: '无限制', value: '无' },
@@ -345,7 +458,11 @@ const historyProfile = ref(null)
 const phoneLoading = ref(false)
 
 const hasHistory = computed(() => {
-  return historyProfile.value && historyProfile.value.historyDescription && !historyProfile.value.historyDescription.includes('无历史消费记录')
+  return (
+    historyProfile.value &&
+    historyProfile.value.historyDescription &&
+    !historyProfile.value.historyDescription.includes('无历史消费记录')
+  )
 })
 
 const selected = reactive({
@@ -364,26 +481,32 @@ const selected = reactive({
   guests: []
 })
 
-watch(() => selected.guests.length, (newVal) => {
-  if (selected.mode === 'multi') {
-    selected.peopleCount = newVal > 0 ? String(newVal) : null
+watch(
+  () => selected.guests.length,
+  (newVal) => {
+    if (selected.mode === 'multi') {
+      selected.peopleCount = newVal > 0 ? String(newVal) : null
+    }
   }
-})
+)
 
-watch(() => selected.mode, (newVal) => {
-  if (newVal === 'multi') {
-    selected.peopleCount = selected.guests.length > 0 ? String(selected.guests.length) : null
+watch(
+  () => selected.mode,
+  (newVal) => {
+    if (newVal === 'multi') {
+      selected.peopleCount = selected.guests.length > 0 ? String(selected.guests.length) : null
+    }
   }
-})
+)
 
 function handleModeChange(mode) {
   if (mode === 'multi') {
     // Convert Single people count selection -> Multi guests count
-    let targetCount = 2;
-    if (selected.peopleCount === '1') targetCount = 1;
-    else if (selected.peopleCount === '2') targetCount = 2;
-    else if (selected.peopleCount === '3-4') targetCount = 3;
-    else if (selected.peopleCount === '5+') targetCount = 5;
+    let targetCount = 2
+    if (selected.peopleCount === '1') targetCount = 1
+    else if (selected.peopleCount === '2') targetCount = 2
+    else if (selected.peopleCount === '3-4') targetCount = 3
+    else if (selected.peopleCount === '5+') targetCount = 5
 
     selected.guests = []
     for (let i = 0; i < targetCount; i++) {
@@ -402,12 +525,12 @@ function handleModeChange(mode) {
     historyProfile.value = null
   } else {
     // Convert Multi guests count -> Single people count tag
-    const count = selected.guests.length;
-    if (count === 1) selected.peopleCount = '1';
-    else if (count === 2) selected.peopleCount = '2';
-    else if (count >= 3 && count <= 4) selected.peopleCount = '3-4';
-    else if (count >= 5) selected.peopleCount = '5+';
-    else selected.peopleCount = null;
+    const count = selected.guests.length
+    if (count === 1) selected.peopleCount = '1'
+    else if (count === 2) selected.peopleCount = '2'
+    else if (count >= 3 && count <= 4) selected.peopleCount = '3-4'
+    else if (count >= 5) selected.peopleCount = '5+'
+    else selected.peopleCount = null
 
     selected.guests = []
   }
@@ -435,7 +558,7 @@ function applyHistoryTastes() {
   if (historyProfile.value) {
     // 1. Tastes
     if (historyProfile.value.historyTastes) {
-      historyProfile.value.historyTastes.forEach(taste => {
+      historyProfile.value.historyTastes.forEach((taste) => {
         if (!selected.tastePreferences.includes(taste)) {
           selected.tastePreferences.push(taste)
         }
@@ -447,7 +570,7 @@ function applyHistoryTastes() {
     }
     // 2. Avoid ingredients
     if (historyProfile.value.consolidatedAvoids) {
-      historyProfile.value.consolidatedAvoids.forEach(avoid => {
+      historyProfile.value.consolidatedAvoids.forEach((avoid) => {
         if (!selected.avoidIngredients.includes(avoid)) {
           selected.avoidIngredients.push(avoid)
         }
@@ -455,7 +578,7 @@ function applyHistoryTastes() {
     }
     // 3. Allergens
     if (historyProfile.value.consolidatedAllergens) {
-      historyProfile.value.consolidatedAllergens.forEach(allergen => {
+      historyProfile.value.consolidatedAllergens.forEach((allergen) => {
         if (!selected.allergens.includes(allergen)) {
           selected.allergens.push(allergen)
         }
@@ -463,7 +586,7 @@ function applyHistoryTastes() {
     }
     // 4. Diseases
     if (historyProfile.value.consolidatedDiseases) {
-      historyProfile.value.consolidatedDiseases.forEach(disease => {
+      historyProfile.value.consolidatedDiseases.forEach((disease) => {
         if (!selected.diseases.includes(disease)) {
           selected.diseases.push(disease)
         }
@@ -471,7 +594,7 @@ function applyHistoryTastes() {
     }
     // 5. Diet lifestyles
     if (historyProfile.value.consolidatedDietLifestyles) {
-      historyProfile.value.consolidatedDietLifestyles.forEach(lifestyle => {
+      historyProfile.value.consolidatedDietLifestyles.forEach((lifestyle) => {
         if (!selected.dietLifestyles.includes(lifestyle)) {
           selected.dietLifestyles.push(lifestyle)
         }
@@ -561,7 +684,8 @@ function reset() {
 const summaryText = computed(() => {
   if (selected.mode === 'single') {
     const parts = []
-    if (selected.peopleCount) parts.push(PEOPLE_OPTIONS.find(o => o.value === selected.peopleCount)?.label)
+    if (selected.peopleCount)
+      parts.push(PEOPLE_OPTIONS.find((o) => o.value === selected.peopleCount)?.label)
     if (selected.diningScene) parts.push(selected.diningScene)
     if (selected.tastePreferences.length) parts.push('口味:' + selected.tastePreferences.join('、'))
     if (selected.avoidIngredients.length) parts.push('忌口:' + selected.avoidIngredients.join('、'))
@@ -585,14 +709,19 @@ defineExpose({ selected, reset })
 </script>
 
 <style scoped>
-.tag-panel { margin-bottom: 16px; }
+.tag-panel {
+  margin-bottom: 16px;
+}
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
 }
-.panel-title { font-weight: 600; font-size: 15px; }
+.panel-title {
+  font-weight: 600;
+  font-size: 15px;
+}
 .tag-row {
   display: flex;
   align-items: flex-start;
@@ -605,14 +734,31 @@ defineExpose({ selected, reset })
   font-size: 13px;
   color: #606266;
 }
-.tag-group { display: flex; flex-wrap: wrap; gap: 6px; }
-.tag-item { cursor: pointer; user-select: none; }
-.tag-item:hover { transform: scale(1.05); transition: transform 0.15s; }
-.tag-footer {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-top: 8px; padding-top: 12px; border-top: 1px solid #ebeef5;
+.tag-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
-.selected-summary { font-size: 12px; color: #909399; }
+.tag-item {
+  cursor: pointer;
+  user-select: none;
+}
+.tag-item:hover {
+  transform: scale(1.05);
+  transition: transform 0.15s;
+}
+.tag-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #ebeef5;
+}
+.selected-summary {
+  font-size: 12px;
+  color: #909399;
+}
 
 .shared-row {
   margin-bottom: 12px;

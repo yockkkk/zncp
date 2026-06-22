@@ -20,10 +20,22 @@
           </div>
         </el-card>
         <div class="btn-group">
-          <el-button type="primary" size="large" :loading="loading" class="recommend-btn" @click="startRecommend">
+          <el-button
+            type="primary"
+            size="large"
+            :loading="loading"
+            class="recommend-btn"
+            @click="startRecommend"
+          >
             <el-icon><MagicStick /></el-icon> 生成推荐
           </el-button>
-          <el-button v-if="loading" type="danger" size="large" class="stop-btn" @click="stopRecommend">
+          <el-button
+            v-if="loading"
+            type="danger"
+            size="large"
+            class="stop-btn"
+            @click="stopRecommend"
+          >
             <el-icon><Close /></el-icon> 停止
           </el-button>
         </div>
@@ -58,10 +70,22 @@
           <el-card v-if="result.sceneContext" class="section-card" shadow="never">
             <template #header>🏠 场景分析</template>
             <div class="scene-grid">
-              <div class="scene-item"><span class="s-label">桌型</span><span>{{ result.sceneContext.tableType || '-' }}</span></div>
-              <div class="scene-item"><span class="s-label">时段</span><span>{{ result.sceneContext.mealTime || '-' }}</span></div>
-              <div class="scene-item"><span class="s-label">氛围</span><span>{{ result.sceneContext.atmosphere || '-' }}</span></div>
-              <div class="scene-item"><span class="s-label">人数</span><span>{{ result.sceneContext.estimatedPeopleCount || '-' }}</span></div>
+              <div class="scene-item">
+                <span class="s-label">桌型</span
+                ><span>{{ result.sceneContext.tableType || '-' }}</span>
+              </div>
+              <div class="scene-item">
+                <span class="s-label">时段</span
+                ><span>{{ result.sceneContext.mealTime || '-' }}</span>
+              </div>
+              <div class="scene-item">
+                <span class="s-label">氛围</span
+                ><span>{{ result.sceneContext.atmosphere || '-' }}</span>
+              </div>
+              <div class="scene-item">
+                <span class="s-label">人数</span
+                ><span>{{ result.sceneContext.estimatedPeopleCount || '-' }}</span>
+              </div>
             </div>
           </el-card>
 
@@ -69,45 +93,111 @@
           <el-card class="section-card" shadow="never">
             <template #header>👤 顾客画像</template>
             <div class="profile-grid">
-              <div class="profile-item"><span class="p-label">人数</span><span>{{ result.userProfile?.peopleCount || '-' }}人</span></div>
-              <div class="profile-item"><span class="p-label">场景</span><span>{{ result.userProfile?.diningScene || '-' }}</span></div>
-              <div class="profile-item"><span class="p-label">消费力</span><span>{{ result.userProfile?.estimatedConsumptionLevel || '-' }}</span></div>
-              <div class="profile-item"><span class="p-label">健康目标</span><span>{{ result.userProfile?.healthGoal || '-' }}</span></div>
+              <div class="profile-item">
+                <span class="p-label">人数</span
+                ><span>{{ result.userProfile?.peopleCount || '-' }}人</span>
+              </div>
+              <div class="profile-item">
+                <span class="p-label">场景</span
+                ><span>{{ result.userProfile?.diningScene || '-' }}</span>
+              </div>
+              <div class="profile-item">
+                <span class="p-label">消费力</span
+                ><span>{{ result.userProfile?.estimatedConsumptionLevel || '-' }}</span>
+              </div>
+              <div class="profile-item">
+                <span class="p-label">健康目标</span
+                ><span>{{ result.userProfile?.healthGoal || '-' }}</span>
+              </div>
             </div>
             <div v-if="result.userProfile?.phone" class="history-profile-info">
-              <div class="h-info-item"><span class="h-label">📱 手机号</span><span>{{ result.userProfile.phone }}</span></div>
-              <div class="h-info-item"><span class="h-label">🧠 长期记忆</span><span class="h-desc-text">{{ result.userProfile.historyDescription }}</span></div>
+              <div class="h-info-item">
+                <span class="h-label">📱 手机号</span><span>{{ result.userProfile.phone }}</span>
+              </div>
+              <div class="h-info-item">
+                <span class="h-label">🧠 长期记忆</span
+                ><span class="h-desc-text">{{ result.userProfile.historyDescription }}</span>
+              </div>
             </div>
             <div class="pref-tags">
-              <el-tag v-for="pref in result.userProfile?.possiblePreferences" :key="pref" size="small">{{ pref }}</el-tag>
+              <el-tag
+                v-for="pref in result.userProfile?.possiblePreferences"
+                :key="pref"
+                size="small"
+                >{{ pref }}</el-tag
+              >
             </div>
 
             <!-- 多人模式各顾客偏好明细 -->
-            <div v-if="isMultiMode && result.userProfile?.guests && result.userProfile.guests.length > 0" class="guests-detail-section">
+            <div
+              v-if="
+                isMultiMode && result.userProfile?.guests && result.userProfile.guests.length > 0
+              "
+              class="guests-detail-section"
+            >
               <div class="g-section-divider"></div>
               <h4 class="g-section-title">👥 各顾客要求明细</h4>
               <div class="g-detail-list">
-                <div v-for="guest in result.userProfile.guests" :key="guest.name" class="g-detail-item">
+                <div
+                  v-for="guest in result.userProfile.guests"
+                  :key="guest.name"
+                  class="g-detail-item"
+                >
                   <div class="g-name-row">
                     <span class="g-name">👤 {{ guest.name }}</span>
                   </div>
                   <div class="g-tag-row">
-                    <el-tag v-if="guest.tastes && guest.tastes.length" size="small" type="warning" class="g-tag">
+                    <el-tag
+                      v-if="guest.tastes && guest.tastes.length"
+                      size="small"
+                      type="warning"
+                      class="g-tag"
+                    >
                       喜欢: {{ guest.tastes.join('、') }}
                     </el-tag>
-                    <el-tag v-if="guest.avoidIngredients && guest.avoidIngredients.length" size="small" type="danger" class="g-tag">
+                    <el-tag
+                      v-if="guest.avoidIngredients && guest.avoidIngredients.length"
+                      size="small"
+                      type="danger"
+                      class="g-tag"
+                    >
                       忌口: {{ guest.avoidIngredients.join('、') }}
                     </el-tag>
-                    <el-tag v-if="guest.allergens && guest.allergens.length" size="small" type="danger" class="g-tag">
+                    <el-tag
+                      v-if="guest.allergens && guest.allergens.length"
+                      size="small"
+                      type="danger"
+                      class="g-tag"
+                    >
                       过敏: {{ guest.allergens.join('、') }}
                     </el-tag>
-                    <el-tag v-if="guest.diseases && guest.diseases.length" size="small" type="danger" class="g-tag">
+                    <el-tag
+                      v-if="guest.diseases && guest.diseases.length"
+                      size="small"
+                      type="danger"
+                      class="g-tag"
+                    >
                       禁忌: {{ guest.diseases.join('、') }}
                     </el-tag>
-                    <el-tag v-if="guest.dietLifestyles && guest.dietLifestyles.length" size="small" type="primary" class="g-tag">
+                    <el-tag
+                      v-if="guest.dietLifestyles && guest.dietLifestyles.length"
+                      size="small"
+                      type="primary"
+                      class="g-tag"
+                    >
                       习惯: {{ guest.dietLifestyles.join('、') }}
                     </el-tag>
-                    <span v-if="!guest.tastes?.length && !guest.avoidIngredients?.length && !guest.allergens?.length && !guest.diseases?.length && !guest.dietLifestyles?.length" class="g-no-req">无特殊要求</span>
+                    <span
+                      v-if="
+                        !guest.tastes?.length &&
+                        !guest.avoidIngredients?.length &&
+                        !guest.allergens?.length &&
+                        !guest.diseases?.length &&
+                        !guest.dietLifestyles?.length
+                      "
+                      class="g-no-req"
+                      >无特殊要求</span
+                    >
                   </div>
                 </div>
               </div>
@@ -115,12 +205,26 @@
           </el-card>
 
           <!-- 话术 -->
-          <el-alert v-if="result.openingScript" :title="result.openingScript" type="success" :closable="false" show-icon class="script-alert" />
+          <el-alert
+            v-if="result.openingScript"
+            :title="result.openingScript"
+            type="success"
+            :closable="false"
+            show-icon
+            class="script-alert"
+          />
 
           <!-- 推荐菜品 -->
           <el-card class="section-card" shadow="never">
             <template #header>
-              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  width: 100%;
+                "
+              >
                 <span>⭐ 推荐菜品</span>
                 <el-tag :type="isMultiMode ? 'success' : 'primary'" effect="dark" size="small">
                   {{ isMultiMode ? '多人配菜模式' : '常规推荐模式' }}
@@ -143,7 +247,12 @@
                   <el-tag type="warning" size="small">¥{{ dish.price }}</el-tag>
                   <el-tag size="small">{{ dish.calories }}kcal</el-tag>
                   <el-tag type="success" size="small">蛋白{{ dish.protein }}g</el-tag>
-                  <el-tag v-if="isMultiMode && dish.suitableFor && dish.suitableFor.length" type="danger" size="small" effect="dark">
+                  <el-tag
+                    v-if="isMultiMode && dish.suitableFor && dish.suitableFor.length"
+                    type="danger"
+                    size="small"
+                    effect="dark"
+                  >
                     适合: {{ dish.suitableFor.join('、') }}
                   </el-tag>
                 </div>
@@ -160,11 +269,19 @@
                 <!-- 采纳按钮 + 份数 -->
                 <div class="dish-action">
                   <template v-if="adoptedDishes.has(dish.dishId)">
-                    <el-tag type="success" size="small">已采纳 {{ adoptedDishes.get(dish.dishId) }} 份</el-tag>
+                    <el-tag type="success" size="small"
+                      >已采纳 {{ adoptedDishes.get(dish.dishId) }} 份</el-tag
+                    >
                   </template>
                   <template v-else>
                     <span class="qty-label">份数</span>
-                    <el-input-number v-model="adoptQtys[dish.dishId]" :min="1" :max="99" size="small" style="width:90px" />
+                    <el-input-number
+                      v-model="adoptQtys[dish.dishId]"
+                      :min="1"
+                      :max="99"
+                      size="small"
+                      style="width: 90px"
+                    />
                     <el-button type="success" size="small" @click="adoptDish(dish.dishId)">
                       顾客选了这道 ✓
                     </el-button>
@@ -205,8 +322,8 @@ const previewUrl = ref('')
 const loading = ref(false)
 const result = ref(null)
 const recordId = ref(null)
-const adoptedDishes = ref(new Map())   // dishId → quantity
-const adoptQtys = reactive({})          // dishId → 当前选择的份数(默认1)
+const adoptedDishes = ref(new Map()) // dishId → quantity
+const adoptQtys = reactive({}) // dishId → 当前选择的份数(默认1)
 const abortController = ref(null)
 
 function onFilePicked(e) {
@@ -225,16 +342,25 @@ function clearPhoto() {
 
 function getDishScript(dishId) {
   if (!result.value?.dishScripts) return null
-  const s = result.value.dishScripts.find(d => d.dishId === dishId)
+  const s = result.value.dishScripts.find((d) => d.dishId === dishId)
   return s?.script || null
 }
 
 async function startRecommend() {
   const tags = tagPanelRef.value?.selected
   if (!tags) return
-  if (!tags.peopleCount) { ElMessage.warning('请选择用餐人数'); return }
-  if (!tags.diningScene) { ElMessage.warning('请选择用餐场景'); return }
-  if (!tags.mealTime) { ElMessage.warning('请选择用餐时段'); return }
+  if (!tags.peopleCount) {
+    ElMessage.warning('请选择用餐人数')
+    return
+  }
+  if (!tags.diningScene) {
+    ElMessage.warning('请选择用餐场景')
+    return
+  }
+  if (!tags.mealTime) {
+    ElMessage.warning('请选择用餐时段')
+    return
+  }
 
   loading.value = true
   result.value = null
@@ -255,7 +381,7 @@ async function startRecommend() {
     result.value = res.data
     recordId.value = res.data.recordId
     adoptedDishes.value = new Map()
-    Object.keys(adoptQtys).forEach(k => delete adoptQtys[k])
+    Object.keys(adoptQtys).forEach((k) => delete adoptQtys[k])
     ElMessage.success('推荐生成成功！')
   } catch (e) {
     if (e.name === 'AbortError' || e.code === 'ERR_CANCELED') {
@@ -281,7 +407,7 @@ function resetAll() {
   result.value = null
   recordId.value = null
   adoptedDishes.value = new Map()
-  Object.keys(adoptQtys).forEach(k => delete adoptQtys[k])
+  Object.keys(adoptQtys).forEach((k) => delete adoptQtys[k])
   tagPanelRef.value?.reset()
   clearPhoto()
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -305,7 +431,9 @@ async function adoptDish(dishId) {
 </script>
 
 <style scoped>
-.waiter-page { width: 100%; }
+.waiter-page {
+  width: 100%;
+}
 .content-grid {
   display: grid;
   grid-template-columns: 380px 1fr;
@@ -313,40 +441,138 @@ async function adoptDish(dishId) {
   align-items: start;
 }
 @media (max-width: 860px) {
-  .content-grid { grid-template-columns: 1fr; }
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
 }
-.left-panel { position: sticky; top: 24px; }
-.panel-title { font-weight: 600; font-size: 15px; }
+.left-panel {
+  position: sticky;
+  top: 24px;
+}
+.panel-title {
+  font-weight: 600;
+  font-size: 15px;
+}
 
-.scene-card { margin-bottom: 16px; }
-.scene-upload { text-align: center; }
+.scene-card {
+  margin-bottom: 16px;
+}
+.scene-upload {
+  text-align: center;
+}
 .upload-btn {
-  border: 2px dashed #dcdfe6; border-radius: 8px; padding: 24px; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; gap: 8px; color: #909399;
+  border: 2px dashed #dcdfe6;
+  border-radius: 8px;
+  padding: 24px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #909399;
 }
-.upload-btn:hover { border-color: #409eff; color: #409eff; }
-.upload-btn .hint { font-size: 12px; color: #c0c4cc; }
-.preview-box { text-align: center; }
-.preview-box img { max-width: 100%; max-height: 200px; border-radius: 8px; margin-bottom: 8px; }
+.upload-btn:hover {
+  border-color: #409eff;
+  color: #409eff;
+}
+.upload-btn .hint {
+  font-size: 12px;
+  color: #c0c4cc;
+}
+.preview-box {
+  text-align: center;
+}
+.preview-box img {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
 
-.btn-group { display: flex; gap: 8px; margin-top: 8px; }
-.recommend-btn { flex: 1; height: 48px; font-size: 16px; }
-.stop-btn { width: 80px; height: 48px; font-size: 14px; }
+.btn-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.recommend-btn {
+  flex: 1;
+  height: 48px;
+  font-size: 16px;
+}
+.stop-btn {
+  width: 80px;
+  height: 48px;
+  font-size: 14px;
+}
 
-.right-panel { min-height: 400px; }
-.loading-box { padding: 48px 24px; background: #fff; border-radius: 8px; text-align: center; }
-.loading-spin { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.loading-text { font-size: 15px; color: #303133; margin: 0; font-weight: 500; }
-.loading-sub { font-size: 12px; color: #909399; margin: 0; }
-.spin-icon { animation: spin 1.2s linear infinite; color: #409eff; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.steps { margin-bottom: 24px; background: #fff; padding: 20px; border-radius: 8px; }
-.section-card { margin-bottom: 16px; }
+.right-panel {
+  min-height: 400px;
+}
+.loading-box {
+  padding: 48px 24px;
+  background: #fff;
+  border-radius: 8px;
+  text-align: center;
+}
+.loading-spin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.loading-text {
+  font-size: 15px;
+  color: #303133;
+  margin: 0;
+  font-weight: 500;
+}
+.loading-sub {
+  font-size: 12px;
+  color: #909399;
+  margin: 0;
+}
+.spin-icon {
+  animation: spin 1.2s linear infinite;
+  color: #409eff;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.steps {
+  margin-bottom: 24px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+}
+.section-card {
+  margin-bottom: 16px;
+}
 
-.scene-grid, .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.scene-item, .profile-item { display: flex; gap: 8px; font-size: 14px; }
-.s-label, .p-label { color: #909399; min-width: 40px; }
-.pref-tags { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+.scene-grid,
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.scene-item,
+.profile-item {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+}
+.s-label,
+.p-label {
+  color: #909399;
+  min-width: 40px;
+}
+.pref-tags {
+  margin-top: 12px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
 .history-profile-info {
   margin-top: 12px;
   padding-top: 12px;
@@ -368,33 +594,95 @@ async function adoptDish(dishId) {
   color: #303133;
   line-height: 1.4;
 }
-.script-alert { margin-bottom: 16px; }
+.script-alert {
+  margin-bottom: 16px;
+}
 
-.dish-row { display: flex; gap: 12px; padding: 16px 0; border-bottom: 1px solid #f2f3f5; }
-.dish-row:last-child { border-bottom: none; }
-.dish-rank { font-size: 28px; min-width: 50px; text-align: center; }
-.rank-num { font-size: 18px; color: #909399; font-weight: 700; }
-.dish-body { flex: 1; }
-.dish-header { display: flex; justify-content: space-between; align-items: center; }
-.dish-header h3 { margin: 0; font-size: 16px; }
-.dish-score { font-size: 20px; font-weight: 700; color: #e6a23c; }
-.dish-tags { margin: 8px 0; display: flex; gap: 6px; }
-.dish-reasons { font-size: 13px; color: #606266; }
-.dish-reasons p { margin: 4px 0; }
+.dish-row {
+  display: flex;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid #f2f3f5;
+}
+.dish-row:last-child {
+  border-bottom: none;
+}
+.dish-rank {
+  font-size: 28px;
+  min-width: 50px;
+  text-align: center;
+}
+.rank-num {
+  font-size: 18px;
+  color: #909399;
+  font-weight: 700;
+}
+.dish-body {
+  flex: 1;
+}
+.dish-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.dish-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.dish-score {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e6a23c;
+}
+.dish-tags {
+  margin: 8px 0;
+  display: flex;
+  gap: 6px;
+}
+.dish-reasons {
+  font-size: 13px;
+  color: #606266;
+}
+.dish-reasons p {
+  margin: 4px 0;
+}
 .dish-script {
-  margin-top: 10px; padding: 10px 12px; background: #f0f9eb; border-radius: 6px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: #f0f9eb;
+  border-radius: 6px;
   border-left: 3px solid #67c23a;
 }
-.script-label { font-size: 12px; color: #67c23a; font-weight: 600; }
-.script-text { font-size: 13px; color: #303133; }
-.dish-action { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
-.qty-label { font-size: 12px; color: #909399; }
+.script-label {
+  font-size: 12px;
+  color: #67c23a;
+  font-weight: 600;
+}
+.script-text {
+  font-size: 13px;
+  color: #303133;
+}
+.dish-action {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.qty-label {
+  font-size: 12px;
+  color: #909399;
+}
 .result-actions {
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
-  padding: 24px 0; text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 0;
+  text-align: center;
 }
 .result-actions .action-hint {
-  font-size: 12px; color: #909399;
+  font-size: 12px;
+  color: #909399;
 }
 .guests-detail-section {
   margin-top: 16px;

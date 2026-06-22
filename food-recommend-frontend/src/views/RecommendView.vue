@@ -22,13 +22,19 @@
 
           <div
             class="drop-zone"
-            :class="{ 'has-image': store.previewUrl, 'dragging': isDragging }"
+            :class="{ 'has-image': store.previewUrl, dragging: isDragging }"
             @dragover.prevent="isDragging = true"
             @dragleave="isDragging = false"
             @drop.prevent="onDrop"
             @click="!store.previewUrl && fileInput.click()"
           >
-            <input ref="fileInput" type="file" accept="image/*" style="display:none" @change="onFilePicked" />
+            <input
+              ref="fileInput"
+              type="file"
+              accept="image/*"
+              style="display: none"
+              @change="onFilePicked"
+            />
             <div v-if="!store.previewUrl" class="drop-placeholder">
               <div class="drop-icon">
                 <el-icon :size="48" color="#c0c4cc"><UploadFilled /></el-icon>
@@ -56,7 +62,7 @@
             <div class="card-hd">
               <el-icon color="#e6a23c"><Star /></el-icon>
               <span>口味偏好快选</span>
-              <el-text size="small" type="info" style="margin-left:auto">可多选</el-text>
+              <el-text size="small" type="info" style="margin-left: auto">可多选</el-text>
             </div>
           </template>
           <div class="tag-grid">
@@ -79,7 +85,7 @@
             <div class="card-hd">
               <el-icon color="#67c23a"><Edit /></el-icon>
               <span>特殊备注</span>
-              <el-text size="small" type="info" style="margin-left:auto">备注优先级最高</el-text>
+              <el-text size="small" type="info" style="margin-left: auto">备注优先级最高</el-text>
             </div>
           </template>
           <el-input
@@ -109,12 +115,16 @@
         <!-- 加载步骤提示 -->
         <transition name="fade">
           <div v-if="store.loading" class="loading-steps">
-            <div v-for="(step, i) in loadingSteps" :key="i"
+            <div
+              v-for="(step, i) in loadingSteps"
+              :key="i"
               class="loading-step"
               :class="{ active: store.currentStep === i, done: store.currentStep > i }"
             >
               <el-icon v-if="store.currentStep > i" color="#67c23a"><CircleCheck /></el-icon>
-              <el-icon v-else-if="store.currentStep === i" class="spin" color="#409eff"><Loading /></el-icon>
+              <el-icon v-else-if="store.currentStep === i" class="spin" color="#409eff"
+                ><Loading
+              /></el-icon>
               <el-icon v-else color="#c0c4cc"><CirclePlus /></el-icon>
               <span>{{ step }}</span>
             </div>
@@ -144,11 +154,13 @@
               <div class="card-hd">
                 <el-icon color="#409eff"><User /></el-icon>
                 <span>顾客画像分析</span>
-                <el-tag size="small" type="success" round style="margin-left:auto">AI 识别完成</el-tag>
+                <el-tag size="small" type="success" round style="margin-left: auto"
+                  >AI 识别完成</el-tag
+                >
               </div>
             </template>
             <div class="profile-grid">
-              <div class="p-item" v-for="item in profileItems" :key="item.label">
+              <div v-for="item in profileItems" :key="item.label" class="p-item">
                 <div class="p-icon">{{ item.icon }}</div>
                 <div>
                   <div class="p-label">{{ item.label }}</div>
@@ -158,7 +170,14 @@
             </div>
             <div v-if="store.result.userProfile.possiblePreferences?.length" class="pref-tags-row">
               <span class="p-label">偏好标签：</span>
-              <el-tag v-for="t in store.result.userProfile.possiblePreferences" :key="t" size="small" round type="info">{{ t }}</el-tag>
+              <el-tag
+                v-for="t in store.result.userProfile.possiblePreferences"
+                :key="t"
+                size="small"
+                round
+                type="info"
+                >{{ t }}</el-tag
+              >
             </div>
             <div v-if="store.finalRemark" class="remark-badge">
               <el-icon><StarFilled /></el-icon>
@@ -176,7 +195,9 @@
           <div class="dishes-title">
             <el-icon color="#e6a23c"><Food /></el-icon>
             <span>推荐菜品</span>
-            <el-tag size="small" round>共 {{ store.result.recommendations?.length || 0 }} 道</el-tag>
+            <el-tag size="small" round
+              >共 {{ store.result.recommendations?.length || 0 }} 道</el-tag
+            >
           </div>
 
           <transition-group name="dish-fade" tag="div">
@@ -235,8 +256,20 @@
 import { ref, computed, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
-  Camera, MagicStick, UploadFilled, Edit, Delete, Star, StarFilled,
-  User, Food, CircleCheck, CirclePlus, Loading, ChatLineRound, CloseBold
+  Camera,
+  MagicStick,
+  UploadFilled,
+  Edit,
+  Delete,
+  Star,
+  StarFilled,
+  User,
+  Food,
+  CircleCheck,
+  CirclePlus,
+  Loading,
+  ChatLineRound,
+  CloseBold
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 import api from '../api'
@@ -261,7 +294,7 @@ const preferTags = [
   { icon: '🎉', label: '适合聚餐' },
   { icon: '🍜', label: '口味新颖' },
   { icon: '🧸', label: '儿童友好' },
-  { icon: '🌿', label: '素食优先' },
+  { icon: '🌿', label: '素食优先' }
 ]
 
 const loadingSteps = [
@@ -269,7 +302,7 @@ const loadingSteps = [
   'AI 多模态模型分析图片...',
   '生成用户画像...',
   '向量数据库语义检索...',
-  'AI 综合评分排序...',
+  'AI 综合评分排序...'
 ]
 
 const profileItems = computed(() => {
@@ -280,7 +313,7 @@ const profileItems = computed(() => {
     { icon: '🎂', label: '年龄段', value: p.ageRange },
     { icon: '🍽️', label: '用餐场景', value: p.diningScene },
     { icon: '💳', label: '消费能力', value: p.estimatedConsumptionLevel },
-    { icon: '🎯', label: '健康目标', value: p.healthGoal },
+    { icon: '🎯', label: '健康目标', value: p.healthGoal }
   ]
 })
 
@@ -347,10 +380,7 @@ async function startRecommend() {
   store.result = null
   startStepAnimation()
 
-  const combinedRemark = [
-    ...store.selectedTags,
-    store.remark.trim()
-  ].filter(Boolean).join('，')
+  const combinedRemark = [...store.selectedTags, store.remark.trim()].filter(Boolean).join('，')
 
   store.finalRemark = combinedRemark
 
@@ -412,7 +442,7 @@ onBeforeUnmount(stopStepAnimation)
   right: -10%;
   width: 300px;
   height: 300px;
-  background: radial-gradient(circle, rgba(64,158,255,0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(64, 158, 255, 0.15) 0%, transparent 70%);
   border-radius: 50%;
 }
 .banner-content h1 {
@@ -422,7 +452,7 @@ onBeforeUnmount(stopStepAnimation)
   margin: 0 0 8px;
 }
 .banner-content p {
-  color: rgba(255,255,255,0.65);
+  color: rgba(255, 255, 255, 0.65);
   font-size: 14px;
   margin: 0;
 }
@@ -436,7 +466,9 @@ onBeforeUnmount(stopStepAnimation)
 }
 
 /* Cards */
-.upload-card, .pref-card, .remark-card {
+.upload-card,
+.pref-card,
+.remark-card {
   border-radius: 12px;
   margin-bottom: 16px;
 }
@@ -474,9 +506,19 @@ onBeforeUnmount(stopStepAnimation)
   text-align: center;
   padding: 24px;
 }
-.drop-icon { margin-bottom: 12px; }
-.drop-tip { font-size: 14px; color: #606266; margin: 0 0 4px; }
-.drop-sub { font-size: 12px; color: #c0c4cc; margin: 0; }
+.drop-icon {
+  margin-bottom: 12px;
+}
+.drop-tip {
+  font-size: 14px;
+  color: #606266;
+  margin: 0 0 4px;
+}
+.drop-sub {
+  font-size: 12px;
+  color: #c0c4cc;
+  margin: 0;
+}
 .preview-img {
   width: 100%;
   max-height: 220px;
@@ -488,7 +530,7 @@ onBeforeUnmount(stopStepAnimation)
   bottom: 10px;
   display: flex;
   gap: 8px;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   padding: 6px 10px;
   border-radius: 20px;
 }
@@ -512,9 +554,19 @@ onBeforeUnmount(stopStepAnimation)
   color: #606266;
   transition: all 0.2s;
 }
-.prefer-tag:hover { border-color: #409eff; color: #409eff; background: #f0f7ff; }
-.prefer-tag.active { border-color: #409eff; background: #409eff; color: #fff; }
-.tag-icon { font-size: 20px; }
+.prefer-tag:hover {
+  border-color: #409eff;
+  color: #409eff;
+  background: #f0f7ff;
+}
+.prefer-tag.active {
+  border-color: #409eff;
+  background: #409eff;
+  color: #fff;
+}
+.tag-icon {
+  font-size: 20px;
+}
 
 /* 推荐按钮 */
 .btn-start {
@@ -526,7 +578,9 @@ onBeforeUnmount(stopStepAnimation)
   background: linear-gradient(135deg, #409eff, #337ecc);
   border: none;
 }
-.btn-start:hover { opacity: 0.9; }
+.btn-start:hover {
+  opacity: 0.9;
+}
 
 /* 加载步骤 */
 .loading-steps {
@@ -544,31 +598,81 @@ onBeforeUnmount(stopStepAnimation)
   padding: 5px 0;
   transition: all 0.3s;
 }
-.loading-step.active { color: #409eff; font-weight: 500; }
-.loading-step.done { color: #67c23a; }
-.spin { animation: spin 1s linear infinite; }
-.stop-btn { width: 100%; margin-top: 8px; }
-@keyframes spin { to { transform: rotate(360deg); } }
+.loading-step.active {
+  color: #409eff;
+  font-weight: 500;
+}
+.loading-step.done {
+  color: #67c23a;
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+.stop-btn {
+  width: 100%;
+  margin-top: 8px;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 /* 右侧空状态 */
-.empty-state { text-align: center; padding: 60px 20px; }
-.empty-icon { font-size: 72px; }
-.empty-title { font-size: 18px; color: #303133; margin: 12px 0 4px; font-weight: 600; }
-.empty-sub { color: #909399; font-size: 13px; }
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+.empty-icon {
+  font-size: 72px;
+}
+.empty-title {
+  font-size: 18px;
+  color: #303133;
+  margin: 12px 0 4px;
+  font-weight: 600;
+}
+.empty-sub {
+  color: #909399;
+  font-size: 13px;
+}
 
 /* 画像卡片 */
-.section-card { border-radius: 12px; margin-bottom: 16px; }
+.section-card {
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
 .profile-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin-bottom: 12px;
 }
-.p-item { display: flex; align-items: flex-start; gap: 10px; }
-.p-icon { font-size: 20px; line-height: 1.4; }
-.p-label { font-size: 11px; color: #909399; }
-.p-val { font-size: 14px; font-weight: 500; color: #303133; margin-top: 1px; }
-.pref-tags-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.p-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.p-icon {
+  font-size: 20px;
+  line-height: 1.4;
+}
+.p-label {
+  font-size: 11px;
+  color: #909399;
+}
+.p-val {
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+  margin-top: 1px;
+}
+.pref-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
 .remark-badge {
   margin-top: 12px;
   background: linear-gradient(135deg, #fdf6ec, #fef0e6);
@@ -617,48 +721,130 @@ onBeforeUnmount(stopStepAnimation)
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 12px;
-  transition: box-shadow 0.25s, transform 0.25s;
+  transition:
+    box-shadow 0.25s,
+    transform 0.25s;
   animation: slideUp 0.4s ease both;
   animation-delay: var(--delay);
 }
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-.dish-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
+.dish-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
 
-.dish-medal { font-size: 28px; min-width: 40px; text-align: center; line-height: 1.3; }
-.rank-num { font-size: 16px; font-weight: 700; color: #909399; }
+.dish-medal {
+  font-size: 28px;
+  min-width: 40px;
+  text-align: center;
+  line-height: 1.3;
+}
+.rank-num {
+  font-size: 16px;
+  font-weight: 700;
+  color: #909399;
+}
 
-.dish-main { flex: 1; }
-.dish-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.dish-name { font-size: 16px; font-weight: 600; color: #1d1e2c; margin: 0; }
-.score-badge { display: flex; align-items: baseline; gap: 2px; }
-.score-num { font-size: 24px; font-weight: 700; color: #e6a23c; line-height: 1; }
-.score-unit { font-size: 12px; color: #909399; }
+.dish-main {
+  flex: 1;
+}
+.dish-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.dish-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d1e2c;
+  margin: 0;
+}
+.score-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+.score-num {
+  font-size: 24px;
+  font-weight: 700;
+  color: #e6a23c;
+  line-height: 1;
+}
+.score-unit {
+  font-size: 12px;
+  color: #909399;
+}
 
-.dish-meta { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.dish-meta {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
 .meta-item {
   font-size: 12px;
   padding: 3px 10px;
   border-radius: 20px;
   font-weight: 500;
 }
-.price { background: #fff7e6; color: #d48806; }
-.cal { background: #f0f7ff; color: #3b82f6; }
-.pro { background: #f0fdf4; color: #16a34a; }
+.price {
+  background: #fff7e6;
+  color: #d48806;
+}
+.cal {
+  background: #f0f7ff;
+  color: #3b82f6;
+}
+.pro {
+  background: #f0fdf4;
+  color: #16a34a;
+}
 
-.dish-reasons { display: flex; flex-direction: column; gap: 5px; }
-.reason-row { display: flex; gap: 8px; font-size: 13px; color: #606266; line-height: 1.6; }
-.reason-icon { flex-shrink: 0; }
+.dish-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.reason-row {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 1.6;
+}
+.reason-icon {
+  flex-shrink: 0;
+}
 
 /* 动画 */
-.fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 
 @media (max-width: 900px) {
-  .main-grid { grid-template-columns: 1fr; }
-  .profile-grid { grid-template-columns: repeat(2, 1fr); }
-  .tag-grid { grid-template-columns: repeat(4, 1fr); }
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+  .profile-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .tag-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 </style>
