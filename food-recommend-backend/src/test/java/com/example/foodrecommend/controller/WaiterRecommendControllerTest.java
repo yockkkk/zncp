@@ -95,6 +95,9 @@ class WaiterRecommendControllerTest {
     @MockBean
     private com.example.foodrecommend.mapper.PromptTemplateMapper promptTemplateMapper;
 
+    @MockBean
+    private com.example.foodrecommend.mapper.FeedbackIndexDlqMapper feedbackIndexDlqMapper;
+
     /**
      * Configure the JwtAuthenticationFilter mock to pass requests through the filter chain.
      * Without this, the Mockito mock swallows the request and MockMvc gets no response.
