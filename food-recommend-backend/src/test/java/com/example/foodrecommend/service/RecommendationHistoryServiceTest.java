@@ -1,5 +1,6 @@
 package com.example.foodrecommend.service;
 
+import com.example.foodrecommend.config.AiModelConfig;
 import com.example.foodrecommend.config.FeedbackBoostProperties;
 import com.example.foodrecommend.entity.FeedbackIndexDlq;
 import com.example.foodrecommend.mapper.FeedbackIndexDlqMapper;
@@ -30,6 +31,7 @@ class RecommendationHistoryServiceTest {
 
     @Autowired FeedbackBoostProperties props;
     @Autowired RecommendationHistoryService historyService;
+    @Autowired com.example.foodrecommend.config.AiModelConfig aiConfig;
 
     @MockBean okhttp3.OkHttpClient mockHttp;
     @MockBean EmbeddingService mockEmbed;
@@ -132,5 +134,25 @@ class RecommendationHistoryServiceTest {
         org.mockito.ArgumentCaptor<FeedbackIndexDlq> dlqCap = org.mockito.ArgumentCaptor.forClass(FeedbackIndexDlq.class);
         verify(dlqMapperMock, timeout(3000)).insert(dlqCap.capture());
         assertThat(dlqCap.getValue().getRecordId()).isEqualTo(8L);
+    }
+
+    @Test
+    void initCollection_creates_when_missing() throws Exception {
+        // 第一个 call：GET collection → 404
+        okhttp3.Call getCall = mock(okhttp3.Call.class);
+        when(getCall.execute()).thenReturn(new okhttp3.Response.Builder()
+            .request(new okhttp3.Request.Builder().url("http://x").build())
+            .protocol(okhttp3.Protocol.HTTP_1_1).code(404).message("nf")
+            .body(okhttp3.ResponseBody.create("", okhttp3.MediaType.parse("application/json")))
+            .build());
+        // 第二个 call：PUT create → 200
+        okhttp3.Call putCall = mock(okhttp3.Call.class);
+        when(putCall.execute()).thenReturn(buildResp("{}"));
+
+        when(mockHttp.newCall(any())).thenReturn(getCall, putCall);
+
+        historyService.initHistoryCollection();
+
+        verify(mockHttp, times(2)).newCall(any());
     }
 }

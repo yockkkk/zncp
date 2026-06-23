@@ -9,4 +9,7 @@ public interface RecommendationHistoryService {
 
     /** 查相似历史采纳。返回 {dishId -> 累计采纳次数}；冷启动/失败/disabled 时返回空 map。 */
     Map<Long, Integer> lookupBoost(String queryText);
+
+    /** 启动时调用：检测 collection 不存在则创建 */
+    void initHistoryCollection();
 }

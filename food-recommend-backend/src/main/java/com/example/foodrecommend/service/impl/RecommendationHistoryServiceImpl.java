@@ -2,6 +2,7 @@ package com.example.foodrecommend.service.impl;
 
 import com.example.foodrecommend.config.FeedbackBoostProperties;
 import com.example.foodrecommend.config.QdrantConfig;
+import com.example.foodrecommend.config.AiModelConfig;
 import com.example.foodrecommend.entity.FeedbackIndexDlq;
 import com.example.foodrecommend.mapper.FeedbackIndexDlqMapper;
 import com.example.foodrecommend.service.EmbeddingService;
@@ -27,6 +28,7 @@ public class RecommendationHistoryServiceImpl implements RecommendationHistorySe
 
     private final FeedbackBoostProperties props;
     private final QdrantConfig qdrantConfig;
+    private final AiModelConfig aiModelConfig;
     private final EmbeddingService embeddingService;
     private final ObjectMapper objectMapper;
     private final OkHttpClient httpClient;
@@ -142,6 +144,50 @@ public class RecommendationHistoryServiceImpl implements RecommendationHistorySe
         } catch (Exception e) {
             log.warn("boost.lookup.miss reason=exception msg={}", e.getMessage());
             return Collections.emptyMap();
+        }
+    }
+
+    @jakarta.annotation.PostConstruct
+    public void initOnBoot() {
+        if (!props.isEnabled()) return;
+        try { initHistoryCollection(); } catch (Exception e) {
+            log.warn("history collection init failed: {}", e.getMessage());
+        }
+    }
+
+    @Override
+    public void initHistoryCollection() {
+        String url = "http://" + qdrantConfig.getHost() + ":" + qdrantConfig.getPort()
+                + "/collections/" + props.getCollectionName();
+        try {
+            okhttp3.Request get = new okhttp3.Request.Builder().url(url).get().build();
+            okhttp3.Call getCall = httpClient.newCall(get);
+            if (getCall == null) return;
+            try (okhttp3.Response resp = getCall.execute()) {
+                if (resp.isSuccessful()) {
+                    log.info("history collection {} 已存在", props.getCollectionName());
+                    return;
+                }
+            }
+            // 注入 AiModelConfig 拿 dimensions
+            int dims = aiModelConfig.getEmbedding().getDimensions();
+            Map<String, Object> body = Map.of("vectors", Map.of("size", dims, "distance", "Cosine"));
+            okhttp3.Request put = new okhttp3.Request.Builder()
+                    .url(url)
+                    .put(okhttp3.RequestBody.create(objectMapper.writeValueAsString(body),
+                            okhttp3.MediaType.parse("application/json")))
+                    .build();
+            okhttp3.Call putCall = httpClient.newCall(put);
+            if (putCall == null) return;
+            try (okhttp3.Response resp = putCall.execute()) {
+                if (resp.isSuccessful()) {
+                    log.info("history collection {} 创建成功 dim={}", props.getCollectionName(), dims);
+                } else {
+                    log.warn("history collection 创建失败 code={}", resp.code());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("history collection init exception: {}", e.getMessage());
         }
     }
 }
