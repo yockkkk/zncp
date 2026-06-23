@@ -1,19 +1,22 @@
 package com.example.foodrecommend.service.impl;
 
 import com.example.foodrecommend.common.BusinessException;
+import com.example.foodrecommend.config.FeedbackBoostProperties;
 import com.example.foodrecommend.dto.GuestProfile;
 import com.example.foodrecommend.dto.UserProfileDTO;
 import com.example.foodrecommend.entity.Dish;
 import com.example.foodrecommend.mapper.DishMapper;
 import com.example.foodrecommend.service.DishMatchingService;
+import com.example.foodrecommend.service.RecommendationHistoryService;
 import com.example.foodrecommend.service.VectorSearchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -27,47 +30,53 @@ public class DishMatchingServiceImpl implements DishMatchingService {
 
     private final VectorSearchService vectorSearchService;
     private final DishMapper dishMapper;
+    private final RecommendationHistoryService historyService;
+    private final FeedbackBoostProperties props;
 
     @Override
     public List<Dish> matchDishes(String queryText, UserProfileDTO profile, int topK) {
-        // Step 1: 向量语义检索
         List<Long> dishIds = vectorSearchService.searchSimilarDishes(queryText, topK);
-
-        if (dishIds.isEmpty()) {
-            throw new BusinessException("未找到相似菜品，请确认菜品向量已生成");
-        }
-
+        if (dishIds.isEmpty()) throw new BusinessException("未找到相似菜品，请确认菜品向量已生成");
         log.info("Agent3-向量检索: 召回 {} 条候选菜品", dishIds.size());
 
-        // Step 2: 从 MySQL 获取完整菜品数据
         List<Dish> candidateDishes = dishMapper.selectByIds(dishIds);
 
-        // Step 3: 规则过滤
-        List<Dish> filtered = ruleFilter(candidateDishes, profile);
+        // 安全/价格/库存过滤先做（不动）
+        List<Dish> safe = candidateDishes.stream()
+                .filter(d -> d.getStatus() != null && d.getStatus() == 1)
+                .filter(d -> d.getVectorStatus() != null && d.getVectorStatus() == 1)
+                .filter(d -> d.getStock() != null && d.getStock() > 0)
+                .filter(d -> priceMatch(d, profile))
+                .filter(d -> isSafeForAtLeastOne(d, profile))
+                .collect(Collectors.toList());
 
-        if (filtered.isEmpty()) {
-            throw new BusinessException("过滤后无可推荐菜品");
-        }
+        if (safe.isEmpty()) throw new BusinessException("过滤后无可推荐菜品");
 
-        log.info("Agent3-规则过滤: {} 条 → {} 条", candidateDishes.size(), filtered.size());
-        return filtered;
-    }
+        // 应用 boost
+        Map<Long, Integer> boost = props.isEnabled()
+                ? historyService.lookupBoost(queryText)
+                : Collections.emptyMap();
 
-    /**
-     * 规则过滤：上架状态 → 向量已生成 → 库存 → 价格匹配 → 安全特征检测 → 销量排序 → Top 20
-     */
-    private List<Dish> ruleFilter(List<Dish> dishes, UserProfileDTO profile) {
-        return dishes.stream()
-                .filter(dish -> dish.getStatus() != null && dish.getStatus() == 1)
-                .filter(dish -> dish.getVectorStatus() != null && dish.getVectorStatus() == 1)
-                .filter(dish -> dish.getStock() != null && dish.getStock() > 0)
-                .filter(dish -> priceMatch(dish, profile))
-                .filter(dish -> isSafeForAtLeastOne(dish, profile))
-                .sorted(Comparator.comparing(
-                        d -> d.getSales() != null ? d.getSales() : 0,
-                        Comparator.reverseOrder()))
+        int maxSales = safe.stream().mapToInt(d -> d.getSales() != null ? d.getSales() : 0).max().orElse(0);
+        final int saleNorm = maxSales + 1;
+
+        List<Dish> sorted = safe.stream()
+                .sorted((x, y) -> Double.compare(score(y, boost, saleNorm), score(x, boost, saleNorm)))
                 .limit(20)
                 .collect(Collectors.toList());
+
+        log.info("Agent3-规则过滤: {} 条 → {} 条 boost={}", candidateDishes.size(), sorted.size(), boost.size());
+        if (!boost.isEmpty()) {
+            log.info("boost.applied top3={}", sorted.stream().limit(3).map(Dish::getId).toList());
+        }
+        return sorted;
+    }
+
+    private double score(Dish d, Map<Long, Integer> boost, int saleNorm) {
+        double base = (d.getSales() != null ? d.getSales() : 0) / (double) saleNorm;
+        int count = boost.getOrDefault(d.getId(), 0);
+        double bst = Math.min(count, props.getBoostCap()) / (double) props.getBoostCap();
+        return base + props.getWeight() * bst;
     }
 
     private boolean isSafeForAtLeastOne(Dish dish, UserProfileDTO profile) {

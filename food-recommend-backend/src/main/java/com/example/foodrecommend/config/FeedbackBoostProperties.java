@@ -13,6 +13,6 @@ public class FeedbackBoostProperties {
     private int minSamples = 3;
     private int topKSimilar = 20;
     private double similarityThreshold = 0.75;
-    private double weight = 0.15;
+    private double weight = 1.0;
     private int boostCap = 5;
 }

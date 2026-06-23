@@ -1,11 +1,14 @@
 package com.example.foodrecommend.service.impl;
 
 import com.example.foodrecommend.common.BusinessException;
+import com.example.foodrecommend.config.FeedbackBoostProperties;
 import com.example.foodrecommend.dto.GuestProfile;
 import com.example.foodrecommend.dto.UserProfileDTO;
 import com.example.foodrecommend.entity.Dish;
 import com.example.foodrecommend.mapper.DishMapper;
+import com.example.foodrecommend.service.RecommendationHistoryService;
 import com.example.foodrecommend.service.VectorSearchService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,12 +17,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 /**
@@ -41,8 +46,19 @@ class DishMatchingServiceImplTest {
     @Mock
     private DishMapper dishMapper;
 
+    @Mock
+    private RecommendationHistoryService historyService;
+
     @InjectMocks
     private DishMatchingServiceImpl service;
+
+    @BeforeEach
+    void setup() {
+        FeedbackBoostProperties props = new FeedbackBoostProperties();
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "props", props);
+        // default boost map so existing tests aren't affected by boost logic
+        lenient().when(historyService.lookupBoost(anyString())).thenReturn(Map.of());
+    }
 
     /** Helper: build a dish that passes basic status/stock/vector checks */
     private Dish dish(Long id, String name, String tags, String description) {
