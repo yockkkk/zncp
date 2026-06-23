@@ -45,8 +45,8 @@ class DishMatchingBoostTest {
 
     @Test
     void boost_pushes_historically_adopted_dish_to_top() {
-        Dish a = dish(1, "宫保鸡丁", 50);  // sales 高
-        Dish b = dish(2, "麻婆豆腐", 10);  // sales 低，但历史采纳多
+        Dish a = dish(1, "宫保鸡丁", 10);  // sales 高
+        Dish b = dish(2, "麻婆豆腐", 9);  // sales 低，但历史采纳多
         when(vectorSearchService.searchSimilarDishes(anyString(), anyInt())).thenReturn(List.of(1L, 2L));
         when(dishMapper.selectByIds(anyList())).thenReturn(List.of(a, b));
         when(historyService.lookupBoost(anyString())).thenReturn(Map.of(2L, 5));
