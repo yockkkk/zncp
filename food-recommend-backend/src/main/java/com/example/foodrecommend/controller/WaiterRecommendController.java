@@ -14,6 +14,7 @@ import com.example.foodrecommend.security.UserPrincipal;
 import com.example.foodrecommend.entity.Dish;
 import com.example.foodrecommend.service.DishService;
 import com.example.foodrecommend.service.RecommendService;
+import com.example.foodrecommend.service.RecommendationHistoryService;
 import com.example.foodrecommend.service.UserProfileService;
 import com.example.foodrecommend.dto.UserProfileDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,6 +47,7 @@ public class WaiterRecommendController {
     private final RecommendationFeedbackMapper feedbackMapper;
     private final DishService dishService;
     private final UserProfileService userProfileService;
+    private final RecommendationHistoryService historyService;
 
     /**
      * 查看可推荐菜品列表（只显示上架 + 有库存 + 向量已生成的）
@@ -215,6 +217,20 @@ public class WaiterRecommendController {
         feedback.setRating(req.getRating());
         feedback.setNote(req.getNote());
         feedbackMapper.insert(feedback);
+
+        // 反馈反哺：异步写入历史向量库（@Async + @Retryable，非阻塞）
+        if (isAdopted && adoptedDishId != null) {
+            try {
+                historyService.indexAdoption(
+                        recordId,
+                        record.getQueryText(),
+                        java.util.List.of(adoptedDishId),
+                        principal.getUserId());
+            } catch (Exception ex) {
+                log.warn("[{}] indexAdoption invocation failed (non-blocking): {}",
+                        org.slf4j.MDC.get("traceId"), ex.getMessage());
+            }
+        }
 
         return Result.success(isAdopted ? "采纳成功，已扣减库存" : "反馈成功", null);
     }

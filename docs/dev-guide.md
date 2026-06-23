@@ -220,3 +220,48 @@ Agent2-用户画像: {...}
 Agent3-候选菜品数: 20, 过滤后: 12
 Agent4-重排序结果: {...}
 ```
+
+---
+
+## 反馈反哺与离线评估
+
+### 配置开关
+
+所有 knob 在 `application.yml` 的 `recommend.feedback-boost.*`（见 `application-template.yml`）。整体关闭：`enabled: false`。
+
+```yaml
+recommend:
+  feedback-boost:
+    enabled: true                          # 总开关
+    collection-name: recommendation_history
+    top-k-similar: 20                      # Qdrant 检索近邻数量
+    similarity-threshold: 0.75            # 最低余弦相似度
+    min-samples: 3                         # 触发 boost 的最小样本数
+    weight: 0.15                           # boost 加成权重
+    boost-cap: 5                           # 单菜品最大 boost 加成次数上限
+```
+
+### 数据流简述
+
+1. 服务员在 `POST /api/waiter/feedback/{recordId}` 提交 `adopted=true` + `adoptedDishId`
+2. `WaiterRecommendController.submitFeedback()` 在写入 `recommendation_feedback` 表后，
+   异步调用 `RecommendationHistoryService.indexAdoption()`（`@Async` + `@Retryable`，不阻塞主流）
+3. `indexAdoption` 生成 query embedding，写 Qdrant `recommendation_history` collection
+4. 下次同类查询进入 `DishMatchingServiceImpl`，`lookupBoost()` 取回相似历史 → 按 weight/cap 叠加 boost 分
+5. 若 Qdrant 写入失败两次，`@Recover` 写 `feedback_index_dlq` 表，不影响主推荐链路
+
+### 失败处理
+
+| 场景 | 结果 |
+|---|---|
+| Qdrant 不可用 | `@Retryable` 重试 2 次后 `@Recover` 写 DLQ，主流程正常返回 |
+| embedding 服务失败 | `indexAdoption` 提前 return，不写 Qdrant，不写 DLQ |
+| `lookupBoost` 异常 | catch 返回空 map，推荐降级为无 boost 结果 |
+
+### 离线评估
+
+```bash
+python scripts/eval_feedback_boost.py --db-url $MYSQL_URL --window-days 30
+```
+
+对比 boost 前后 hit-rate@5 / NDCG@5；不入 CI。

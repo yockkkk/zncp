@@ -10,8 +10,8 @@ import com.example.foodrecommend.security.UserPrincipal;
 import com.example.foodrecommend.service.DishService;
 import com.example.foodrecommend.service.RecommendService;
 import com.example.foodrecommend.service.UserProfileService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.FilterChain;
+import com.example.foodrecommend.service.RecommendationHistoryService;
+import com.fasterxml.jackson.databind.ObjectMapper;import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,6 +74,9 @@ class WaiterRecommendControllerTest {
 
     @MockBean
     private UserProfileService userProfileService;
+
+    @MockBean
+    private RecommendationHistoryService historyService;
 
     // SecurityConfig requires JwtAuthenticationFilter; mock it and configure call-through below.
     @MockBean
