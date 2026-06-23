@@ -2,12 +2,18 @@ package com.example.foodrecommend.service.impl;
 
 import com.example.foodrecommend.config.FeedbackBoostProperties;
 import com.example.foodrecommend.config.QdrantConfig;
+import com.example.foodrecommend.entity.FeedbackIndexDlq;
+import com.example.foodrecommend.mapper.FeedbackIndexDlqMapper;
 import com.example.foodrecommend.service.EmbeddingService;
 import com.example.foodrecommend.service.RecommendationHistoryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -24,11 +30,60 @@ public class RecommendationHistoryServiceImpl implements RecommendationHistorySe
     private final EmbeddingService embeddingService;
     private final ObjectMapper objectMapper;
     private final OkHttpClient httpClient;
+    private final FeedbackIndexDlqMapper dlqMapper;
 
+    @Async
+    @Retryable(
+            retryFor = Exception.class,
+            maxAttempts = 2,
+            backoff = @Backoff(delay = 500))
     @Override
     public void indexAdoption(Long recordId, String queryText, List<Long> adoptedDishIds, Long waiterId) {
         if (!props.isEnabled()) return;
-        // 实际写入在 Task 5 实现
+        if (adoptedDishIds == null || adoptedDishIds.isEmpty()) return;
+        try {
+            List<Float> vec = embeddingService.getEmbedding(queryText);
+            if (vec == null || vec.isEmpty()) return;
+
+            Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("adoptedDishIds", adoptedDishIds);
+            payload.put("waiterId", waiterId);
+            payload.put("createTime", System.currentTimeMillis());
+
+            Map<String, Object> point = new java.util.HashMap<>();
+            point.put("id", recordId);
+            point.put("vector", vec);
+            point.put("payload", payload);
+
+            Map<String, Object> body = Map.of("points", List.of(point));
+            String url = "http://" + qdrantConfig.getHost() + ":" + qdrantConfig.getPort()
+                    + "/collections/" + props.getCollectionName() + "/points";
+
+            okhttp3.Request req = new okhttp3.Request.Builder()
+                    .url(url)
+                    .put(okhttp3.RequestBody.create(objectMapper.writeValueAsString(body),
+                            okhttp3.MediaType.parse("application/json")))
+                    .build();
+            try (okhttp3.Response resp = httpClient.newCall(req).execute()) {
+                if (!resp.isSuccessful()) {
+                    throw new java.io.IOException("qdrant upsert failed: " + resp.code());
+                }
+                log.info("index.adoption recordId={} dishIds={}", recordId, adoptedDishIds.size());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e); // 让 @Retryable 接管
+        }
+    }
+
+    @Recover
+    public void recoverIndexAdoption(Exception e, Long recordId, String queryText,
+                                     List<Long> adoptedDishIds, Long waiterId) {
+        log.warn("index.adoption.dlq recordId={} err={}", recordId, e.getMessage());
+        FeedbackIndexDlq row = new FeedbackIndexDlq();
+        row.setRecordId(recordId);
+        row.setError(String.valueOf(e.getMessage()));
+        row.setRetryCount(2);
+        dlqMapper.insert(row);
     }
 
     @Override

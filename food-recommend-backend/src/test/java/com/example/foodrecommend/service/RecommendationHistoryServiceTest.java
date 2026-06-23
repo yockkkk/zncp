@@ -1,6 +1,8 @@
 package com.example.foodrecommend.service;
 
 import com.example.foodrecommend.config.FeedbackBoostProperties;
+import com.example.foodrecommend.entity.FeedbackIndexDlq;
+import com.example.foodrecommend.mapper.FeedbackIndexDlqMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -31,6 +33,7 @@ class RecommendationHistoryServiceTest {
 
     @MockBean okhttp3.OkHttpClient mockHttp;
     @MockBean EmbeddingService mockEmbed;
+    @MockBean FeedbackIndexDlqMapper dlqMapperMock;
 
     private okhttp3.Response buildResp(String body) {
         return new okhttp3.Response.Builder()
@@ -100,5 +103,34 @@ class RecommendationHistoryServiceTest {
         when(mockHttp.newCall(any())).thenReturn(call);
 
         assertThat(historyService.lookupBoost("x")).isEmpty();
+    }
+
+    @Test
+    void indexAdoption_writes_upsert_to_qdrant() throws Exception {
+        when(mockEmbed.getEmbedding(anyString())).thenReturn(List.of(0.1f, 0.2f));
+        okhttp3.Call call = mock(okhttp3.Call.class);
+        when(call.execute()).thenReturn(buildResp("{\"status\":\"ok\"}"));
+        when(mockHttp.newCall(any())).thenReturn(call);
+
+        historyService.indexAdoption(7L, "辣 多人", List.of(11L, 22L), 5L);
+
+        org.mockito.ArgumentCaptor<okhttp3.Request> cap = org.mockito.ArgumentCaptor.forClass(okhttp3.Request.class);
+        verify(mockHttp, timeout(2000)).newCall(cap.capture());
+        assertThat(cap.getValue().url().toString())
+            .endsWith("/collections/recommendation_history/points");
+    }
+
+    @Test
+    void indexAdoption_writes_dlq_when_qdrant_fails_after_retries() throws Exception {
+        when(mockEmbed.getEmbedding(anyString())).thenReturn(List.of(0.1f));
+        okhttp3.Call call = mock(okhttp3.Call.class);
+        when(call.execute()).thenThrow(new java.io.IOException("down"));
+        when(mockHttp.newCall(any())).thenReturn(call);
+
+        historyService.indexAdoption(8L, "x", List.of(1L), 1L);
+
+        org.mockito.ArgumentCaptor<FeedbackIndexDlq> dlqCap = org.mockito.ArgumentCaptor.forClass(FeedbackIndexDlq.class);
+        verify(dlqMapperMock, timeout(3000)).insert(dlqCap.capture());
+        assertThat(dlqCap.getValue().getRecordId()).isEqualTo(8L);
     }
 }
