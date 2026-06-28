@@ -1,7 +1,9 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/history/history"
+    "pages/history/history",
+    "pages/profile/profile",
+    "pages/login/login"
   ],
   "window": {
     "navigationBarTitleText": "智能餐饮推荐",
@@ -26,14 +28,14 @@
         "text": "我的记录",
         "iconPath": "images/list.png",
         "selectedIconPath": "images/list-active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "个人中心",
+        "iconPath": "images/user.png",
+        "selectedIconPath": "images/user-active.png"
       }
     ]
-  },
-  "plugins": {
-    "WechatSI": {
-      "version": "0.3.6",
-      "provider": "wx069ba97219f66d99"
-    }
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json"

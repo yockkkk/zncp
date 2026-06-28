@@ -32,6 +32,19 @@ application.yml
 
 # Logs
 *.log
+*.log.*
+*.log.gz
 logs/
+food-recommend-backend/logs/
 storage/
 .superpowers/
+
+# Local WeChat developer settings
+food-recommend-miniprogram/config.local.js
+food-recommend-miniprogram/project.private.config.json
+
+# Generated presentation/artifact workspaces
+projects/
+tools/
+.pptx-build-*/
+*.docx

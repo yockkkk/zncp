@@ -33,20 +33,22 @@ public class AiRerankServiceImpl implements AiRerankService {
     private volatile String cachedRerankPrompt;
 
     private static final String DEFAULT_RERANK_PROMPT =
-        "你是一个智能餐饮推荐专家。根据用餐画像（可能是多位顾客的组合）对候选菜品重排序并组合配菜。\\n"
+        "你是一个智能餐饮推荐专家。根据用餐画像（可能是多位顾客的组合）对候选菜品重排序并组合配菜，同时为服务员生成推荐话术。\\n"
         + "规则：\\n"
         + "1. 只能从候选菜品中选择，不允许编造数据库中不存在的菜品。\\n"
         + "2. 推荐的菜品应形成一个平衡的组合，总数量应大致匹配用餐人数（如：1人点1-2道，2人点2-3道，3-4人点4-5道，5人以上点6-8道）。\\n"
         + "3. 必须绝对遵守每一位顾客的避忌限制（忌口/不吃、过敏源、疾病禁忌、习惯等）。如果某道菜包含某位顾客避忌的成分，决不能推荐给该顾客（在 suitableFor 中剔除该顾客）；如果某道菜对整桌人都存在严重过敏隐患，应剔除该菜。\\n"
         + "4. 匹配每位顾客的口味偏好（如：爱吃酸、爱吃麻、不爱甜、喜欢嫩、要下饭、要清淡等）。\\n"
         + "5. 悄悄优先推荐高毛利率菜品（grossMargin较高的菜品，例如饮品、甜点或特色高毛利菜，通常 >= 0.70），但确保整体荤素与口味搭配合理，不着痕迹，不让顾客反感。\\n"
-        + "6. 对于每一道推荐的菜品，必须输出 suitableFor 字段，填入适合享用该菜品的顾客姓名列表（例如：[\"顾客A\", \"顾客C\"]），若都适合则填入所有顾客姓名或[\"全体顾客\"]。\\n"
-        + "7. 输出必须是 JSON 格式。\\n\\n"
+        + "6. 对于每一道推荐的菜品，必须输出 suitableFor 字段，填入适合享用该菜品的顾客姓名列表（例如：[\\\"顾客A\\\", \\\"顾客C\\\"]），若都适合则填入所有顾客姓名或[\\\"全体顾客\\\"]。\\n"
+        + "7. 同时为服务员生成推荐话术：openingScript 是简短的整桌开场推荐（30-60字，亲切自然），dishScripts 数组里每道菜对应一段 script（20-50字，突出口味/卖点，避免重复 reason）。\\n"
+        + "8. 输出必须是 JSON 格式，不要加任何解释文字。\\n\\n"
         + "用户画像：\\n{{userProfile}}\\n\\n"
         + "候选菜品（含毛利率 grossMargin）：\\n{{candidateDishes}}\\n\\n"
         + "输出格式为：\\n"
         + "{\\n"
-        + "  \\\"summary\\\": \\\"整体平衡配菜说明（解释这桌配菜如何照顾到各人偏好并避开忌口，荤素搭配的合理性等）\\\",\\n"
+        + "  \\\"summary\\\": \\\"整体平衡配菜说明\\\",\\n"
+        + "  \\\"openingScript\\\": \\\"服务员对整桌的开场推荐话术\\\",\\n"
         + "  \\\"recommendations\\\": [\\n"
         + "    {\\n"
         + "      \\\"dishId\\\": 1,\\n"
@@ -54,36 +56,41 @@ public class AiRerankServiceImpl implements AiRerankService {
         + "      \\\"rank\\\": 1,\\n"
         + "      \\\"score\\\": 95,\\n"
         + "      \\\"suitableFor\\\": [\\\"顾客A\\\", \\\"顾客C\\\"],\\n"
-        + "      \\\"reason\\\": \\\"推荐理由（说明为什么推荐以及为什么适合这几位顾客）\\\",\\n"
+        + "      \\\"reason\\\": \\\"推荐理由\\\",\\n"
         + "      \\\"nutritionComment\\\": \\\"营养评价\\\",\\n"
         + "      \\\"costPerformanceComment\\\": \\\"性价比评价\\\"\\n"
         + "    }\\n"
+        + "  ],\\n"
+        + "  \\\"dishScripts\\\": [\\n"
+        + "    { \\\"dishId\\\": 1, \\\"dishName\\\": \\\"菜品名称\\\", \\\"script\\\": \\\"针对该菜的服务员推荐话术\\\" }\\n"
         + "  ]\\n"
         + "}";
 
     private String getRerankPrompt() {
         if (cachedRerankPrompt != null) return cachedRerankPrompt;
-        try {
-            PromptTemplate t = promptTemplateMapper.selectOne(
-                    new LambdaQueryWrapper<PromptTemplate>()
-                            .eq(PromptTemplate::getCode, "RERANK_DISH_RECOMMEND")
-                            .eq(PromptTemplate::getStatus, 1));
-            if (t != null && t.getContent() != null && !t.getContent().isEmpty()) {
-                // 自愈检查：如果数据库里的提示词是旧版的（不包含 suitableFor），就更新它
-                if (!t.getContent().contains("suitableFor")) {
-                    t.setContent(DEFAULT_RERANK_PROMPT);
-                    promptTemplateMapper.updateById(t);
-                    log.info("检测到旧版重排序提示词，已自动更新为新版");
+        synchronized (this) {
+            if (cachedRerankPrompt != null) return cachedRerankPrompt;
+            try {
+                PromptTemplate t = promptTemplateMapper.selectOne(
+                        new LambdaQueryWrapper<PromptTemplate>()
+                                .eq(PromptTemplate::getCode, "RERANK_DISH_RECOMMEND")
+                                .eq(PromptTemplate::getStatus, 1));
+                if (t != null && t.getContent() != null && !t.getContent().isEmpty()) {
+                    if (!t.getContent().contains("openingScript") || !t.getContent().contains("suitableFor")) {
+                        t.setContent(DEFAULT_RERANK_PROMPT);
+                        promptTemplateMapper.updateById(t);
+                        log.info("检测到旧版重排序提示词，已自动更新为新版（合并话术）");
+                    }
+                    cachedRerankPrompt = t.getContent();
+                    log.info("重排序提示词已从数据库加载");
+                    return cachedRerankPrompt;
                 }
-                cachedRerankPrompt = t.getContent();
-                log.info("重排序提示词已从数据库加载");
-                return cachedRerankPrompt;
+            } catch (Exception e) {
+                log.warn("从数据库加载重排序提示词失败，使用默认提示词: {}", e.getMessage());
             }
-        } catch (Exception e) {
-            log.warn("从数据库加载重排序提示词失败，使用默认提示词: {}", e.getMessage());
+            log.info("使用默认重排序提示词");
+            return DEFAULT_RERANK_PROMPT;
         }
-        log.info("使用默认重排序提示词");
-        return DEFAULT_RERANK_PROMPT;
     }
 
     @Override
@@ -139,16 +146,20 @@ public class AiRerankServiceImpl implements AiRerankService {
                 String responseBody = response.body().string();
                 log.info("重排序模型返回长度: {}", responseBody.length());
                 JsonNode root = objectMapper.readTree(responseBody);
-                String content = root.path("choices").get(0).path("message").path("content").asText();
-                log.info("Rerank LLM raw content: {}", content);
+                JsonNode choices = root.path("choices");
+                if (!choices.isArray() || choices.size() == 0) {
+                    throw new BusinessException("重排序模型返回结构异常");
+                }
+                String content = choices.get(0).path("message").path("content").asText();
+                log.info("Rerank LLM raw content (len={}): {}", content.length(), content.length() > 500 ? content.substring(0, 500) + "...[truncated]" : content);
 
-                if ((content == null || content.isEmpty()) && !root.path("choices").get(0).path("message").path("reasoning_content").isMissingNode()) {
-                    content = root.path("choices").get(0).path("message").path("reasoning_content").asText();
+                if ((content == null || content.isEmpty()) && !choices.get(0).path("message").path("reasoning_content").isMissingNode()) {
+                    content = choices.get(0).path("message").path("reasoning_content").asText();
                     log.info("从 reasoning_content 提取内容, 长度: {}", content.length());
                 }
 
                 if (content == null || content.isEmpty()) {
-                    String finishReason = root.path("choices").get(0).path("finish_reason").asText();
+                    String finishReason = choices.get(0).path("finish_reason").asText();
                     log.error("重排序模型空内容, finish_reason={}, usage={}", finishReason, root.path("usage").toString());
                     throw new BusinessException("重排序模型返回空内容, finish_reason=" + finishReason);
                 }
@@ -157,26 +168,48 @@ public class AiRerankServiceImpl implements AiRerankService {
                 log.info("Extracted jsonStr to parse: {}", jsonStr);
                 List<RecommendDishDTO> results;
                 String summary;
+                String openingScript = null;
+                List<com.example.foodrecommend.dto.DishScriptDTO> dishScripts = null;
 
                 try {
                     JsonNode resultNode = objectMapper.readTree(jsonStr);
                     summary = resultNode.path("summary").asText("");
+                    openingScript = resultNode.path("openingScript").asText(null);
                     JsonNode recommendationsNode = resultNode.path("recommendations");
                     results = objectMapper.readValue(
                             recommendationsNode.toString(),
                             new TypeReference<List<RecommendDishDTO>>() {}
                     );
+                    JsonNode dishScriptsNode = resultNode.path("dishScripts");
+                    if (!dishScriptsNode.isMissingNode() && dishScriptsNode.isArray()) {
+                        dishScripts = objectMapper.readValue(
+                                dishScriptsNode.toString(),
+                                new TypeReference<List<com.example.foodrecommend.dto.DishScriptDTO>>() {}
+                        );
+                    }
                 } catch (Exception parseEx) {
                     log.warn("JSON完整解析失败，尝试截断恢复: {}", parseEx.getMessage());
                     // 尝试从截断的JSON中恢复已解析的菜品
                     String repaired = repairTruncatedJson(jsonStr);
                     JsonNode resultNode = objectMapper.readTree(repaired);
                     summary = resultNode.path("summary").asText("");
+                    openingScript = resultNode.path("openingScript").asText(null);
                     JsonNode recommendationsNode = resultNode.path("recommendations");
                     results = objectMapper.readValue(
                             recommendationsNode.toString(),
                             new TypeReference<List<RecommendDishDTO>>() {}
                     );
+                    JsonNode dishScriptsNode = resultNode.path("dishScripts");
+                    if (!dishScriptsNode.isMissingNode() && dishScriptsNode.isArray()) {
+                        try {
+                            dishScripts = objectMapper.readValue(
+                                    dishScriptsNode.toString(),
+                                    new TypeReference<List<com.example.foodrecommend.dto.DishScriptDTO>>() {}
+                            );
+                        } catch (Exception ignore) {
+                            // 截断时 dishScripts 可能缺失，话术可由 Agent5 兜底
+                        }
+                    }
                     log.info("截断恢复成功，解析出 {} 条推荐", results.size());
                 }
 
@@ -194,11 +227,23 @@ public class AiRerankServiceImpl implements AiRerankService {
                     }
                 }
 
+                List<RecommendDishDTO> originalResults = new ArrayList<>(results);
                 results.removeIf(dto -> dto.getScore() != null && dto.getScore() < 60);
+                if (results.isEmpty() && !originalResults.isEmpty()) {
+                    log.warn("重排序结果全部低于阈值，回退取原始前 3 条");
+                    originalResults.sort((a, b) -> {
+                        int sa = a.getScore() != null ? a.getScore() : 0;
+                        int sb2 = b.getScore() != null ? b.getScore() : 0;
+                        return Integer.compare(sb2, sa);
+                    });
+                    results = new ArrayList<>(originalResults.subList(0, Math.min(3, originalResults.size())));
+                }
 
                 RerankResultDTO result = new RerankResultDTO();
                 result.setSummary(summary);
                 result.setRecommendations(results);
+                result.setOpeningScript(openingScript);
+                result.setDishScripts(dishScripts);
                 return result;
             }
         } catch (BusinessException e) {
@@ -226,7 +271,7 @@ public class AiRerankServiceImpl implements AiRerankService {
             }
         }
         // 去掉末尾未闭合的部分，补全括号
-        while (sb.length() > 0 && braceDepth > 0 || bracketDepth > 0) {
+        while (sb.length() > 0 && (braceDepth > 0 || bracketDepth > 0)) {
             int lastComma = sb.lastIndexOf(",");
             if (lastComma > 0) {
                 sb.setLength(lastComma);

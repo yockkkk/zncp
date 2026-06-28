@@ -215,21 +215,38 @@ INSERT INTO prompt_template (code, name, content, type, status) VALUES
 
 -- 语音理解提示词
 INSERT INTO prompt_template (code, name, content, type, status) VALUES
-('VOICE_UNDERSTAND', '语音理解提示词', '你是一个餐饮推荐系统的语音理解助手。服务员的语音描述会包含用餐人数、场景、口味偏好、预算、饮食限制和用餐时段等信息。
+('VOICE_UNDERSTAND', '语音理解提示词', '你是一个餐饮推荐系统的语音理解助手。服务员的语音描述会包含用餐人数、场景、口味偏好、预算、饮食限制、以及可能的多位顾客的个性化偏好等信息。
 
-请从以下语音转文字内容中提取结构化信息。语音文本可能有识别错误，请根据语义推断。
+请从以下语音转文字内容中提取结构化数据，并输出为符合以下要求的 JSON 对象：
 
-只使用以下枚举值填充字段：
-- peopleCount: "1" | "2" | "3-4" | "5+"
-- diningScene: "便餐" | "约会" | "商务" | "家庭" | "朋友聚餐"
-- tastePreferences: ["辣" | "清淡" | "甜" | "咸" | "无偏好"]  (数组，可多选)
-- budgetLevel: "实惠" | "中等" | "高端" | "不限"
-- dietaryRestriction: "无" | "素食" | "低脂" | "高蛋白"
-- mealTime: "早餐" | "午餐" | "晚餐" | "夜宵"
+1. **推荐模式判断** (`mode`):
+   - 如果语音文本中提到了多个不同的顾客有不同的要求（例如：“三个人吃，我喜欢辣的，另外的人不吃香菜，还有人过敏花生”），则 `mode` 必须为 "multi"，并且把每个人独立的要求提取到 guests 列表中。
+   - 否则（例如只是统一的描述：“三个人，吃个便餐，要微辣的”），`mode` 设为 "single"。
 
-如果某字段无法确定，使用合理的默认值（peopleCount="2", diningScene="便餐", budgetLevel="中等", dietaryRestriction="无"）。
+2. **字段定义与可选枚举值**：
+   - mode: "single" | "multi"
+   - peopleCount: "1" | "2" | "3-4" | "5+"
+   - diningScene: "便餐" | "约会" | "商务" | "家庭" | "朋友聚餐"
+   - budgetLevel: "实惠" | "中等" | "高端" | "不限"
+   - mealTime: "早餐" | "午餐" | "晚餐" | "夜宵"
+   - dietaryRestriction: "无" | "素食" | "低脂" | "高蛋白"
+   - tastePreferences: 数组，可选值: ["辣", "清淡", "甜", "咸", "爱吃酸", "爱吃麻", "不爱甜", "喜欢嫩", "无偏好"]
 
-请严格按照 JSON 格式输出，不要加任何额外说明。
+3. **多人模式下的 guests 列表字段 (当 mode 为 "multi" 时使用，必须包含每个人的详细属性)**：
+   - name: 顾客称呼，如 "顾客A", "顾客B", "顾客C"
+   - avoidIngredients: 数组，只从这些值中选: ["辣", "香菜", "葱", "蒜", "牛肉", "羊肉"]
+   - allergens: 数组，只从这些值中选: ["花生", "海鲜", "鸡蛋", "牛奶"]
+   - diseases: 数组，只从这些值中选: ["痛风", "糖尿病", "高血压", "胃病", "术后"]
+   - dietLifestyles: 数组，只从这些值中选: ["清真", "素食", "Keto", "减脂"]
+   - tastes: 数组，只从这些值中选: ["爱吃酸", "爱吃麻", "不爱甜", "喜欢嫩", "要下饭", "要清淡"]
+
+4. **单人模式下的过滤字段 (当 mode 为 "single" 时使用)**：
+   - avoidIngredients: 同上的忌口枚举
+   - allergens: 同上的过敏源枚举
+   - diseases: 同上的疾病禁忌
+   - dietLifestyles: 对应的习惯
+
+请推断并以严格的 JSON 格式输出，不要附加任何 Markdown 格式框（如 ```json）或任何多余文字。
 
 语音文本：{{voiceText}}
 

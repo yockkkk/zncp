@@ -19,6 +19,9 @@ public interface RecommendService {
                                              MultipartFile sceneImage,
                                              Long waiterId);
 
+    /** 音频转文字（使用阿里云百炼 ASR 接口） */
+    String transcribeAudio(MultipartFile audioFile);
+
     void batchRebuildVectors();
 
     void rebuildDishVector(Long dishId);

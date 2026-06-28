@@ -27,8 +27,8 @@ public class VoiceUnderstandingServiceImpl implements VoiceUnderstandingService 
 
     private final AiModelConfig aiModelConfig;
     private final PromptTemplateMapper promptTemplateMapper;
-    private final ObjectMapper objectMapper;
     private final OkHttpClient httpClient;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public TagInputDTO parseVoiceText(String voiceText) {
@@ -77,9 +77,13 @@ public class VoiceUnderstandingServiceImpl implements VoiceUnderstandingService 
                 }
 
                 JsonNode root = objectMapper.readTree(response.body().string());
-                String content = root.path("choices").get(0).path("message").path("content").asText();
+                JsonNode choices = root.path("choices");
+                if (!choices.isArray() || choices.size() == 0) {
+                    throw new BusinessException("语音理解模型返回结构异常");
+                }
+                String content = choices.get(0).path("message").path("content").asText();
                 if (content.isEmpty()) {
-                    content = root.path("choices").get(0).path("message").path("reasoning_content").asText();
+                    content = choices.get(0).path("message").path("reasoning_content").asText();
                 }
                 if (content.isEmpty()) {
                     log.warn("语音理解模型返回空内容");

@@ -1,0 +1,53 @@
+<view class="login-container">
+  <view class="logo-area">
+    <text class="logo-emoji">🍲</text>
+    <view class="app-title">智味 AI 智能配餐系统</view>
+    <view class="app-subtitle">服务员工作站</view>
+  </view>
+
+  <view class="login-card glass-card">
+    <view class="login-tabs">
+      <view class="tab-item {{loginType === 'wx' ? 'active' : ''}}" bindtap="switchLoginType" data-type="wx">微信登录</view>
+      <view class="tab-item {{loginType === 'pwd' ? 'active' : ''}}" bindtap="switchLoginType" data-type="pwd">账号登录</view>
+    </view>
+
+    <!-- 微信登录面板 -->
+    <view class="form-panel" wx:if="{{loginType === 'wx'}}">
+      <view class="wx-tips">
+        <text class="tips-icon">🟢</text>
+        <text class="tips-text">使用微信一键授权登录，快速绑定服务员角色，高效开展智能配餐服务。</text>
+      </view>
+      
+      <button class="btn-wx-login" bindtap="handleWxLogin" loading="{{loading}}">
+        微信授权一键登录
+      </button>
+    </view>
+
+    <!-- 账号密码登录面板 -->
+    <view class="form-panel" wx:if="{{loginType === 'pwd'}}">
+      <view class="input-group">
+        <text class="input-label">账号/手机号</text>
+        <input class="login-input" type="text" placeholder="请输入系统分配的账号" value="{{username}}" bindinput="onUsernameInput" />
+      </view>
+      
+      <view class="input-group">
+        <text class="input-label">密码</text>
+        <input class="login-input" type="password" placeholder="请输入密码" value="{{password}}" bindinput="onPasswordInput" />
+      </view>
+
+      <button class="btn-pwd-login" bindtap="handlePwdLogin" loading="{{loading}}">
+        立即登录
+      </button>
+    </view>
+  </view>
+
+  <!-- 用户协议与隐私条款 -->
+  <view class="agreement-area">
+    <checkbox-group bindchange="onAgreementChange">
+      <label class="agreement-label">
+        <checkbox class="agreement-checkbox" value="agreed" checked="{{agreed}}" />
+        <text class="agreement-text">我已阅读并同意 <text class="agreement-link">《用户服务协议》</text> 与 <text class="agreement-link">《隐私保护指引》</text></text>
+      </label>
+    </checkbox-group>
+  </view>
+</view>

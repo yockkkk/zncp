@@ -1,5 +1,376 @@
-.container { padding: 16px; }
-.empty-box { display: flex; flex-direction: column; align-items: center; padding: 80px 0; }
-.empty-icon { font-size: 48px; margin-bottom: 16px; }
-.empty-text { font-size: 16px; color: #606266; margin-bottom: 8px; }
-.history-card { }
+.container {
+  padding: 16px;
+  background-color: #f6f8fb;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.flex-row {
+  display: flex;
+  align-items: center;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.text-bold {
+  font-weight: 700;
+}
+
+.mt-12 {
+  margin-top: 12px;
+}
+
+.mt-16 {
+  margin-top: 16px;
+}
+
+.mb-12 {
+  margin-bottom: 12px;
+}
+
+.mb-6 {
+  margin-bottom: 6px;
+}
+
+/* ===== 个人业绩看板 ===== */
+.performance-board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.p-card {
+  flex: 1;
+  min-width: 75px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(160, 175, 195, 0.08);
+  border: 1px solid rgba(235, 240, 245, 0.6);
+  text-align: center;
+}
+
+.p-card.revenue-card {
+  background: linear-gradient(135deg, #fffaf3 0%, #fff6e5 100%);
+  border: 1px solid #ffe8cc;
+}
+
+.p-label {
+  font-size: 10px;
+  color: #718096;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.p-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.p-val.green { color: #22c55e; }
+.p-val.blue { color: #409eff; }
+.p-val.orange { color: #dd6b20; }
+
+/* ===== 工具提示栏 ===== */
+.toolbar {
+  margin-bottom: 12px;
+}
+
+.hint {
+  font-size: 11px;
+  color: #909399;
+}
+
+/* ===== 历史卡片列表 ===== */
+.history-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 15px rgba(160, 175, 195, 0.08);
+  border: 1px solid rgba(235, 240, 245, 0.6);
+  box-sizing: border-box;
+}
+
+/* ===== 空状态 ===== */
+.empty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80px 0;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-text {
+  font-size: 16px;
+  color: #606266;
+  margin-bottom: 8px;
+}
+
+.text-muted {
+  font-size: 12px;
+  color: #909399;
+}
+
+/* ===== 标签和徽章 ===== */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 10px;
+  border-radius: 4px;
+  margin-right: 6px;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.badge-success { background-color: #e6fffa; color: #319795; }
+.badge-danger { background-color: #fff5f5; color: #e53e3e; }
+.badge-warning { background-color: #fffaf0; color: #dd6b20; }
+.badge-primary { background-color: #ebf8ff; color: #3182ce; }
+.badge-muted { background-color: #f7fafc; color: #4a5568; }
+
+/* ===== 详情弹窗 overlay ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-card {
+  width: 86%;
+  background-color: #ffffff;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+  animation: modalFadeIn 0.3s ease;
+}
+
+.detail-modal {
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-scroll {
+  flex: 1;
+  max-height: 60vh;
+  margin-top: 10px;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-header {
+  font-size: 15px;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.detail-section {
+  margin-bottom: 18px;
+}
+
+.sec-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 8px;
+  border-left: 3px solid #409eff;
+  padding-left: 8px;
+}
+
+/* 画像表格 */
+.profile-table {
+  background-color: #f7fafc;
+  border-radius: 8px;
+  border: 1px solid #edf2f7;
+  overflow: hidden;
+}
+
+.pt-row {
+  display: flex;
+  border-bottom: 1px solid #edf2f7;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.pt-row:last-child {
+  border-bottom: none;
+}
+
+.pt-label {
+  width: 70px;
+  color: #718096;
+  font-weight: 500;
+}
+
+.pt-val {
+  flex: 1;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+/* 各顾客明细 */
+.detail-guests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-guest-item {
+  background-color: #f7fafc;
+  border: 1px solid #edf2f7;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.dg-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1a3a60;
+  margin-bottom: 6px;
+}
+
+.dg-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* 场景照片 */
+.detail-image {
+  width: 100%;
+  max-height: 180px;
+  border-radius: 8px;
+  background-color: #f7fafc;
+}
+
+/* 采纳时间线 */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 8px;
+}
+
+.timeline-item {
+  border-left: 2px solid #22c55e;
+  padding-left: 12px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 4px;
+  width: 8px;
+  height: 8px;
+  background-color: #22c55e;
+  border-radius: 50%;
+}
+
+.timeline-time {
+  font-size: 10px;
+  color: #a0aec0;
+}
+
+.timeline-desc {
+  font-size: 12px;
+  color: #2d3748;
+}
+
+/* 推荐菜品 */
+.detail-dish-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detail-dish-card {
+  background-color: #f8fafc;
+  border: 1px solid #edf2f7;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.detail-dish-card.adopted-card {
+  background-color: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.dd-rank {
+  font-size: 18px;
+  margin-right: 6px;
+}
+
+.dd-reason {
+  display: block;
+  font-size: 11px;
+  color: #4a5568;
+  line-height: 1.5;
+  background-color: #ffffff;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-top: 6px;
+}
+
+.detail-dish-card.adopted-card .dd-reason {
+  background-color: #ffffff;
+}
+
+/* 底部关闭按钮 */
+.modal-footer {
+  margin-top: 14px;
+}
+
+.btn-cancel {
+  background-color: #edf2f7;
+  color: #4a5568;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 0;
+  border-radius: 8px;
+  line-height: 1.4;
+  margin: 0;
+}

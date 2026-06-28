@@ -1,4 +1,28 @@
 <view class="container">
+  <!-- 1. 个人业绩看板 -->
+  <view class="performance-board flex-between" wx:if="{{records.length > 0 || revenue > 0}}">
+    <view class="p-card">
+      <text class="p-label">总推荐次数</text>
+      <text class="p-val">{{records.length}}次</text>
+    </view>
+    <view class="p-card">
+      <text class="p-label">已采纳次数</text>
+      <text class="p-val green">{{totalAdopted}}次</text>
+    </view>
+    <view class="p-card">
+      <text class="p-label">采纳转化率</text>
+      <text class="p-val blue">{{adoptionRate}}%</text>
+    </view>
+    <view class="p-card revenue-card">
+      <text class="p-label">累计销售额</text>
+      <text class="p-val orange">¥{{revenue}}</text>
+    </view>
+  </view>
+
+  <view class="toolbar" wx:if="{{records.length > 0}}">
+    <text class="hint">最近 50 条推荐记录 · 点击卡片查看溯源详情</text>
+  </view>
+
   <!-- 空状态 -->
   <view wx:if="{{!loading && records.length === 0}}" class="empty-box">
     <text class="empty-icon">📋</text>
@@ -7,24 +31,24 @@
   </view>
 
   <!-- 记录卡片列表 -->
-  <view wx:for="{{records}}" wx:key="id" class="card history-card">
+  <view wx:for="{{records}}" wx:key="id" class="card history-card" bindtap="openDetail" data-id="{{item.id}}">
     <view class="flex-between mb-12">
       <text class="text-muted">{{item.createTime}}</text>
-      <text class="tag {{item.adopted === 1 ? 'tag-success' : ''}}">
+      <text class="badge {{item.adopted === 1 ? 'badge-success' : 'badge-muted'}}">
         {{item.adopted === 1 ? '已采纳' : '未采纳'}}
       </text>
     </view>
 
     <!-- 标签摘要 -->
     <view class="flex-row flex-wrap">
-      <text class="tag tag-primary" wx:for="{{item._tags}}" wx:key="*this" wx:if="{{item}}">
+      <text class="badge badge-primary" wx:for="{{item._tags}}" wx:key="*this" wx:if="{{item}}">
         {{item}}
       </text>
     </view>
 
     <!-- 推荐菜品 -->
     <view class="flex-row flex-wrap mt-12">
-      <text class="tag tag-warning" wx:for="{{item._dishes}}" wx:key="name" wx:for-item="d">
+      <text class="badge badge-warning" wx:for="{{item._dishes}}" wx:key="name" wx:for-item="d">
         {{d.name}}
       </text>
     </view>
@@ -32,4 +56,85 @@
 
   <!-- 加载更多 -->
   <view wx:if="{{loading}}" class="text-muted mt-16" style="text-align:center">加载中...</view>
+
+  <!-- ====== 详情弹窗 ====== -->
+  <view class="modal-overlay" wx:if="{{showDetailModal}}">
+    <view class="modal-card detail-modal">
+      <view class="modal-header">📋 推荐详情 #{{detail.id}}</view>
+      <scroll-view class="detail-scroll" scroll-y="true">
+        <!-- 顾客画像 -->
+        <view class="detail-section">
+          <view class="sec-title">👤 顾客画像</view>
+          <view class="profile-table">
+            <view class="pt-row"><text class="pt-label">用餐场景</text><text class="pt-val">{{detailProfile.diningScene || '-'}}</text></view>
+            <view class="pt-row"><text class="pt-label">用餐人数</text><text class="pt-val">{{detailProfile.peopleCount ? detailProfile.peopleCount + '人' : '-'}}</text></view>
+            <view class="pt-row"><text class="pt-label">消费水平</text><text class="pt-val">{{detailProfile.estimatedConsumptionLevel || '-'}}</text></view>
+            <view class="pt-row"><text class="pt-label">用餐时段</text><text class="pt-val">{{detailProfile.mealTime || '-'}}</text></view>
+            <view class="pt-row" wx:if="{{detailProfile.tastePreferences}}">
+              <text class="pt-label">口味偏好</text>
+              <text class="pt-val">{{detailProfile.tastePreferences}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 各顾客明细 -->
+        <view class="detail-section" wx:if="{{detailProfile.guests && detailProfile.guests.length > 0}}">
+          <view class="sec-title">👥 各顾客明细</view>
+          <view class="detail-guests-list">
+            <view wx:for="{{detailProfile.guests}}" wx:key="name" class="detail-guest-item">
+              <view class="dg-name">👤 {{item.name}}</view>
+              <view class="dg-tags">
+                <text class="badge badge-warning" wx:if="{{item.tastes && item.tastes.length}}">喜欢: {{item.tastes}}</text>
+                <text class="badge badge-danger" wx:if="{{item.avoidIngredients && item.avoidIngredients.length}}">忌口: {{item.avoidIngredients}}</text>
+                <text class="badge badge-danger" wx:if="{{item.allergens && item.allergens.length}}">过敏: {{item.allergens}}</text>
+                <text class="badge badge-warning" wx:if="{{item.diseases && item.diseases.length}}">禁忌: {{item.diseases}}</text>
+                <text class="badge badge-primary" wx:if="{{item.dietLifestyles && item.dietLifestyles.length}}">习惯: {{item.dietLifestyles}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 场景照片 -->
+        <view class="detail-section" wx:if="{{detail.sceneImageUrl || detail.imageUrl}}">
+          <view class="sec-title">📸 场景照片</view>
+          <image class="detail-image" src="{{detail.sceneImageUrl || detail.imageUrl}}" mode="aspectFit" />
+        </view>
+
+        <!-- 采纳记录 -->
+        <view class="detail-section" wx:if="{{detail.feedbacks && detail.feedbacks.length > 0}}">
+          <view class="sec-title">🎯 采纳记录</view>
+          <view class="timeline">
+            <view class="timeline-item" wx:for="{{detail.feedbacks}}" wx:key="id">
+              <text class="timeline-time">{{item.createTime}}</text>
+              <text class="timeline-desc">采纳了 <text class="text-bold">{{item._dishName}}</text> × {{item.quantity || 1}} 份</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 推荐菜品 -->
+        <view class="detail-section">
+          <view class="sec-title">⭐ 智能排序菜品</view>
+          <view class="detail-dish-list">
+            <view wx:for="{{detailRecommendations}}" wx:key="dishId" class="detail-dish-card {{item._isAdopted ? 'adopted-card' : ''}}">
+              <view class="flex-between mb-6">
+                <view class="flex-row">
+                  <text class="dd-rank">{{item._rankEmoji}}</text>
+                  <text class="text-bold" style="font-size: 13px">{{item.name}}</text>
+                </view>
+                <text class="badge badge-success" wx:if="{{item._isAdopted}}">已采纳 {{item._adoptQty}}份</text>
+              </view>
+              <view class="flex-row mb-6">
+                <text class="badge badge-warning">¥{{item.price}}</text>
+                <text class="badge badge-primary">{{item.score}}分</text>
+              </view>
+              <text class="dd-reason">{{item.reason || '暂无推荐理由'}}</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="modal-footer flex-center" style="margin-top: 16px">
+        <button class="btn-cancel" style="width: 100%" bindtap="closeDetailModal">关闭</button>
+      </view>
+    </view>
+  </view>
 </view>

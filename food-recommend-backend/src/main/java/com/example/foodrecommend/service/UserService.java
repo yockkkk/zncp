@@ -27,4 +27,7 @@ public interface UserService {
 
     /** 根据ID获取用户 */
     User getById(Long id);
+
+    /** 更新服务员个人信息 */
+    User updateProfile(Long id, String realName, String phone);
 }

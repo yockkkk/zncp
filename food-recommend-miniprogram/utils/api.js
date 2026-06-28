@@ -3,14 +3,16 @@
  */
 const auth = require('./auth')
 
-const BASE = 'http://localhost:8080/api'
+const config = require('../config')
+const BASE = config.BASE_URL + '/api'
 
 // eslint-disable-next-line no-unused-vars
 function request(method, path, data, options = {}) {
   return new Promise((resolve, reject) => {
     const token = auth.getToken()
     const header = {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Bypass-Tunnel-Reminder': 'true'
     }
     if (token) {
       header['Authorization'] = 'Bearer ' + token
@@ -47,6 +49,7 @@ function request(method, path, data, options = {}) {
 }
 
 module.exports = {
+  BASE,
   get: (path) => request('GET', path),
   post: (path, data, options) => request('POST', path, data, options),
   put: (path, data) => request('PUT', path, data),

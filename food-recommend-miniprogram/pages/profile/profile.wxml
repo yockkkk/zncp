@@ -1,0 +1,57 @@
+<view class="profile-container">
+  <!-- 用户卡片 -->
+  <view class="user-card glass-card">
+    <view class="avatar-area">
+      <text class="avatar-emoji">👤</text>
+    </view>
+    <view class="user-details">
+      <view class="name-row">
+        <text class="real-name">{{userInfo.realName || '微信服务员'}}</text>
+        <text class="role-badge">服务员</text>
+      </view>
+      <text class="username-label">账号: {{userInfo.username}}</text>
+      <text class="phone-label">绑定手机: {{userInfo.phone || '未绑定'}}</text>
+    </view>
+  </view>
+
+  <!-- 数据统计 -->
+  <view class="stats-card glass-card">
+    <view class="section-title">📊 我的服务业绩</view>
+    <view class="stats-grid">
+      <view class="stat-item">
+        <text class="stat-value">{{totalAdopted}}</text>
+        <text class="stat-label">已采纳配餐(次)</text>
+      </view>
+      <view class="stat-item border-left">
+        <text class="stat-value">¥{{revenue}}</text>
+        <text class="stat-label">累计营业额</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 信息绑定/修改表单 -->
+  <view class="edit-card glass-card">
+    <view class="section-title">✍️ 完善/修改个人信息</view>
+    
+    <view class="input-group">
+      <text class="input-label">真实姓名</text>
+      <input class="profile-input" type="text" placeholder="请输入真实姓名" value="{{editRealName}}" bindinput="onRealNameInput" />
+    </view>
+    
+    <view class="input-group">
+      <text class="input-label">绑定手机号</text>
+      <input class="profile-input" type="number" maxlength="11" placeholder="请输入11位手机号" value="{{editPhone || ''}}" bindinput="onPhoneInput" />
+    </view>
+
+    <button class="btn-save" bindtap="saveProfile" loading="{{saving}}">
+      保存修改
+    </button>
+  </view>
+
+  <!-- 退出登录按钮 -->
+  <view class="logout-area">
+    <button class="btn-logout" bindtap="handleLogout">
+      退出登录
+    </button>
+  </view>
+</view>

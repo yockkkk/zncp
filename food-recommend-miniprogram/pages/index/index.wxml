@@ -1,161 +1,495 @@
 <view class="container">
-  <!-- 状态栏 -->
-  <view class="status-bar" wx:if="{{userInfo}}">
-    <text class="text-muted">👤 {{userInfo.realName || userInfo.username}}</text>
-    <text class="text-muted">· 服务员</text>
+  <!-- 1. 顶部服务员状态栏 -->
+  <view class="status-bar flex-between" wx:if="{{userInfo}}">
+    <view class="waiter-info">
+      <text class="waiter-avatar">👤</text>
+      <text class="waiter-name">{{userInfo.realName || userInfo.username}}</text>
+      <text class="waiter-badge">服务员</text>
+    </view>
+    <view class="logout-link" bindtap="resetAll">重置当前</view>
   </view>
 
-  <!-- ===== 未开始：录音区域 ===== -->
-  <view wx:if="{{!result && !loading && !showTags}}" class="main-section">
-    <!-- 大圆形录音按钮 -->
-    <view class="mic-wrapper">
-      <view class="mic-ring {{listening ? 'pulse' : ''}}">
-        <view class="mic-btn" bindtouchstart="startRecord" bindtouchend="stopRecord">
-          <text class="mic-icon">🎤</text>
+  <!-- 2. 模式切换首部 -->
+  <view wx:if="{{!result && !loading}}" class="mode-tabs">
+    <view class="tab-item {{mode === 'single' ? 'active' : ''}}" bindtap="switchMode" data-mode="single">常规推荐</view>
+    <view class="tab-item {{mode === 'multi' ? 'active' : ''}}" bindtap="switchMode" data-mode="multi">多人配菜</view>
+  </view>
+
+  <!-- 3. 配置输入区 -->
+  <view wx:if="{{!result && !loading}}" class="config-section">
+    
+    <!-- === 语音输入区域 === -->
+    <view class="card glass-card">
+      <view class="section-title">🎤 语音智能识别</view>
+      <view class="mic-wrapper">
+        <view class="mic-ring {{listening ? 'pulse' : ''}}">
+          <view class="mic-btn" bindtouchstart="startRecord" bindtouchend="stopRecord">
+            <text class="mic-icon">🎤</text>
+          </view>
+        </view>
+        <text class="mic-label">{{listening ? '正在聆听，请描述顾客偏好...' : '长按说话，通过语音描述顾客要求'}}</text>
+      </view>
+
+      <!-- 语音文本展示 -->
+      <view class="transcript-box">
+        <view class="transcript-header flex-between">
+          <text class="text-bold">🗣️ 语音/文本输入（支持直接编辑）：</text>
+          <text class="clear-btn" bindtap="clearVoice" wx:if="{{voiceText}}">清除</text>
+        </view>
+        <textarea class="transcript-textarea" placeholder="长按上方话筒说话，或直接在此输入/编辑顾客偏好要求..." value="{{voiceText}}" bindinput="onVoiceTextInput" maxlength="500" auto-height></textarea>
+        <button class="btn-mini btn-parse" bindtap="processVoice" disabled="{{!voiceText}}" loading="{{processing}}" style="margin-top: 16rpx; background: linear-gradient(135deg, #409eff, #2f80ed); color: white; border: none; font-size: 24rpx; padding: 10rpx 24rpx; border-radius: 30rpx; line-height: 1.5; font-weight: 500;">{{processing ? 'AI 提取中...' : '⚡ AI 智能提取标签'}}</button>
+      </view>
+    </view>
+    
+    <!-- === 长期记忆 / 手机号查询 (仅限常规模式) === -->
+    <view wx:if="{{mode === 'single'}}" class="card glass-card">
+      <view class="section-title">📱 长期记忆 (手机号)</view>
+      <view class="phone-input-row">
+        <input class="phone-input" type="number" maxlength="11" placeholder="输入11位手机号查询长期记忆" value="{{phone || ''}}" bindinput="onPhoneInput" />
+        <view wx:if="{{phoneLoading}}" class="loader-mini"></view>
+      </view>
+      
+      <!-- 长期记忆结果提示 -->
+      <view wx:if="{{historyProfile}}" class="history-profile-box">
+        <view class="h-box-header flex-between">
+          <text class="h-box-title">🧠 熟客历史偏好轨迹</text>
+          <button wx:if="{{historyProfile.historyDescription && historyProfile.historyDescription !== '无历史消费记录'}}" class="btn-mini" bindtap="applyHistoryTastes">一键套用</button>
+        </view>
+        <view class="h-box-body">
+          <text class="h-desc">{{historyProfile.historyDescription}}</text>
+          <view class="flex-row flex-wrap mt-12" wx:if="{{historyProfile.historyTastes.length || historyProfile.consolidatedAvoids.length || historyProfile.consolidatedAllergens.length}}">
+            <text class="badge badge-success" wx:for="{{historyProfile.historyTastes}}" wx:key="*this">{{item}}</text>
+            <text class="badge badge-danger" wx:for="{{historyProfile.consolidatedAvoids}}" wx:key="*this">忌口: {{item}}</text>
+            <text class="badge badge-danger" wx:for="{{historyProfile.consolidatedAllergens}}" wx:key="*this">过敏: {{item}}</text>
+            <text class="badge badge-warning" wx:for="{{historyProfile.consolidatedDiseases}}" wx:key="*this">禁忌: {{item}}</text>
+            <text class="badge badge-primary" wx:for="{{historyProfile.consolidatedDietLifestyles}}" wx:key="*this">{{item}}</text>
+          </view>
         </view>
       </view>
-      <text class="mic-label">{{listening ? '正在聆听...' : '按住说话'}}</text>
     </view>
 
-    <!-- 语音文本展示 -->
-    <view class="transcript-box" wx:if="{{voiceText}}">
-      <view class="transcript-header flex-between">
-        <text class="text-bold">🗣️ 您说的是：</text>
-        <text class="text-muted" bindtap="clearVoice">清除</text>
-      </view>
-      <text class="transcript-text">{{voiceText}}</text>
-      <view class="mt-12">
-        <button class="btn-primary" bindtap="processVoice" loading="{{processing}}">
-          生成推荐
-        </button>
+    <!-- === 现场餐桌拍照 (可选) === -->
+    <view class="card glass-card">
+      <view class="section-title">📷 现场环境拍照 (可选)</view>
+      <view class="scene-uploader">
+        <view wx:if="{{!sceneImagePath}}" class="upload-placeholder" bindtap="chooseSceneImage">
+          <text class="upload-icon">📸</text>
+          <text class="upload-text">拍摄一张餐桌环境照片</text>
+          <text class="upload-hint">帮助 AI 感知餐桌氛围、桌型与人数</text>
+        </view>
+        <view class="preview-box" wx:else>
+          <image class="preview-img" src="{{sceneImagePath}}" mode="aspectFill" />
+          <view class="delete-badge" bindtap="clearSceneImage">×</view>
+        </view>
       </view>
     </view>
 
-    <!-- 不支持语音时的降级提示 -->
-    <view wx:if="{{!voiceSupported}}" class="fallback-box card mt-16">
-      <text class="text-muted">⚠️ 当前环境不支持录音，请使用微信小程序</text>
+    <!-- === 常规推荐表单面板 === -->
+    <view wx:if="{{mode === 'single'}}" class="single-form-panel">
+      <!-- 用餐人数 -->
+      <view class="card glass-card">
+        <view class="form-row">
+          <text class="form-label">👥 用餐人数</text>
+          <view class="tag-group">
+            <view class="tag-item {{peopleCount === item ? 'active' : ''}}" wx:for="{{PEOPLE_OPTIONS}}" wx:key="*this" bindtap="selectPeople" data-val="{{item}}">
+              {{item}}人
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 用餐时段 -->
+      <view class="card glass-card">
+        <view class="form-row">
+          <text class="form-label">🕐 用餐时段</text>
+          <view class="tag-group">
+            <view class="tag-item {{mealTime === item ? 'active' : ''}}" wx:for="{{MEAL_TIME_OPTIONS}}" wx:key="*this" bindtap="selectMealTime" data-val="{{item}}">
+              {{item}}
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 用餐场景 -->
+      <view class="card glass-card">
+        <view class="form-row">
+          <text class="form-label">🍽️ 用餐场景</text>
+          <view class="tag-group">
+            <view class="tag-item {{diningScene === item ? 'active' : ''}}" wx:for="{{SCENE_OPTIONS}}" wx:key="*this" bindtap="selectScene" data-val="{{item}}">
+              {{item}}
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 预算等级 -->
+      <view class="card glass-card">
+        <view class="form-row">
+          <text class="form-label">💰 预算等级</text>
+          <view class="tag-group">
+            <view class="tag-item {{budgetLevel === item ? 'active' : ''}}" wx:for="{{BUDGET_OPTIONS}}" wx:key="*this" bindtap="selectBudget" data-val="{{item}}">
+              {{item}}
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 饮食限制 -->
+      <view class="card glass-card">
+        <view class="form-row">
+          <text class="form-label">🥦 饮食限制</text>
+          <view class="tag-group">
+            <view class="tag-item {{dietaryRestriction === item ? 'active' : ''}}" wx:for="{{DIETARY_OPTIONS}}" wx:key="*this" bindtap="selectDietary" data-val="{{item}}">
+              {{item === '无' ? '无限制' : item}}
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 口味偏好 (多选) -->
+      <view class="card glass-card">
+        <view class="form-row">
+          <text class="form-label">🌶️ 口味偏好 (可多选)</text>
+          <view class="tag-group">
+            <view class="tag-item {{tastePreferencesActive[item] ? 'active' : ''}}" wx:for="{{TASTE_OPTIONS}}" wx:key="*this" bindtap="toggleTaste" data-val="{{item}}">
+              {{item}}
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 忌口不吃 (多选) -->
+      <view class="card glass-card">
+        <view class="form-row">
+          <text class="form-label">🙅 忌口不吃 (可多选)</text>
+          <view class="tag-group">
+            <view class="tag-item {{avoidIngredientsActive[item] ? 'active' : ''}}" wx:for="{{GUEST_AVOID_OPTIONS}}" wx:key="*this" bindtap="toggleAvoid" data-val="{{item}}">
+              {{item}}
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 过敏源 (多选) -->
+      <view class="card glass-card">
+        <view class="form-row">
+          <text class="form-label">🌾 过敏源 (可多选)</text>
+          <view class="tag-group">
+            <view class="tag-item {{allergensActive[item] ? 'active' : ''}}" wx:for="{{GUEST_ALLERGEN_OPTIONS}}" wx:key="*this" bindtap="toggleAllergen" data-val="{{item}}">
+              {{item}}
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 疾病禁忌 (多选) -->
+      <view class="card glass-card">
+        <view class="form-row">
+          <text class="form-label">🩹 疾病禁忌 (可多选)</text>
+          <view class="tag-group">
+            <view class="tag-item {{diseasesActive[item] ? 'active' : ''}}" wx:for="{{GUEST_DISEASE_OPTIONS}}" wx:key="*this" bindtap="toggleDisease" data-val="{{item}}">
+              {{item}}
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- === 多人配菜表单面板 === -->
+    <view class="multi-form-panel" wx:else>
+      <!-- 共享属性：场景、时段、预算 -->
+      <view class="card glass-card">
+        <view class="picker-row">
+          <view class="picker-item">
+            <text class="picker-label">用餐场景</text>
+            <picker mode="selector" range="{{SCENE_OPTIONS}}" bindchange="onMultiSceneChange">
+              <view class="picker-val">{{diningScene || '选择场景 ▾'}}</view>
+            </picker>
+          </view>
+          <view class="picker-item">
+            <text class="picker-label">用餐时段</text>
+            <picker mode="selector" range="{{MEAL_TIME_OPTIONS}}" bindchange="onMultiMealTimeChange">
+              <view class="picker-val">{{mealTime || '选择时段 ▾'}}</view>
+            </picker>
+          </view>
+          <view class="picker-item">
+            <text class="picker-label">预算等级</text>
+            <picker mode="selector" range="{{BUDGET_OPTIONS_NO_ALL}}" bindchange="onMultiBudgetChange">
+              <view class="picker-val">{{budgetLevel || '选择预算 ▾'}}</view>
+            </picker>
+          </view>
+        </view>
+      </view>
+
+      <!-- 顾客列表及各自画像 -->
+      <view class="card glass-card">
+        <view class="guests-header flex-between">
+          <text class="section-title">👥 顾客要求配置 ({{guests.length}}人)</text>
+          <button class="btn-mini" bindtap="addGuest">添加顾客</button>
+        </view>
+
+        <!-- 顾客水平标签栏 -->
+        <scroll-view class="guests-tab-bar" scroll-x="true">
+          <view class="guest-tab-item {{activeGuestIndex === index ? 'active' : ''}}" wx:for="{{guests}}" wx:key="index" bindtap="switchGuestTab" data-idx="{{index}}">
+            {{item.name}}
+            <text class="guest-tab-remove" catchtap="removeGuest" data-idx="{{index}}">×</text>
+          </view>
+        </scroll-view>
+
+        <!-- 当前编辑顾客表单 -->
+        <view class="guest-edit-box" wx:if="{{guests.length > 0}}">
+          <view class="guest-name-input-row">
+            <text class="form-label-small">称呼</text>
+            <input class="guest-name-input" type="text" value="{{guests[activeGuestIndex].name}}" bindinput="onGuestNameInput" />
+          </view>
+
+          <!-- 忌口不吃 -->
+          <view class="guest-group-box">
+            <text class="form-label-small">🙅 忌口不吃</text>
+            <view class="tag-group-small">
+              <view class="tag-item-small {{guests[activeGuestIndex]._avoidActive[item] ? 'active' : ''}}" wx:for="{{GUEST_AVOID_OPTIONS}}" wx:key="*this" bindtap="toggleGuestAvoid" data-val="{{item}}">
+                {{item}}
+              </view>
+            </view>
+          </view>
+
+          <!-- 过敏源 -->
+          <view class="guest-group-box">
+            <text class="form-label-small">🌾 过敏源</text>
+            <view class="tag-group-small">
+              <view class="tag-item-small {{guests[activeGuestIndex]._allergenActive[item] ? 'active' : ''}}" wx:for="{{GUEST_ALLERGEN_OPTIONS}}" wx:key="*this" bindtap="toggleGuestAllergen" data-val="{{item}}">
+                {{item}}
+              </view>
+            </view>
+          </view>
+
+          <!-- 疾病禁忌 -->
+          <view class="guest-group-box">
+            <text class="form-label-small">🩹 疾病禁忌</text>
+            <view class="tag-group-small">
+              <view class="tag-item-small {{guests[activeGuestIndex]._diseaseActive[item] ? 'active' : ''}}" wx:for="{{GUEST_DISEASE_OPTIONS}}" wx:key="*this" bindtap="toggleGuestDisease" data-val="{{item}}">
+                {{item}}
+              </view>
+            </view>
+          </view>
+
+          <!-- 饮食习惯 -->
+          <view class="guest-group-box">
+            <text class="form-label-small">🥦 饮食习惯</text>
+            <view class="tag-group-small">
+              <view class="tag-item-small {{guests[activeGuestIndex]._lifestyleActive[item] ? 'active' : ''}}" wx:for="{{GUEST_LIFESTYLE_OPTIONS}}" wx:key="*this" bindtap="toggleGuestLifestyle" data-val="{{item}}">
+                {{item}}
+              </view>
+            </view>
+          </view>
+
+          <!-- 口味偏好 -->
+          <view class="guest-group-box">
+            <text class="form-label-small">🌶️ 口味偏好</text>
+            <view class="tag-group-small">
+              <view class="tag-item-small {{guests[activeGuestIndex]._tasteActive[item] ? 'active' : ''}}" wx:for="{{GUEST_TASTE_OPTIONS}}" wx:key="*this" bindtap="toggleGuestTaste" data-val="{{item}}">
+                {{item}}
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 提交及重置按钮 -->
+    <view class="btn-action-group">
+      <button class="btn-primary" bindtap="generateRecommend" loading="{{loading}}">
+        ✨ 智能生成配餐推荐
+      </button>
+      <button class="btn-secondary" bindtap="resetAll">重置配置</button>
     </view>
   </view>
 
-  <!-- ===== Agent 0 提取的标签确认 ===== -->
-  <view wx:if="{{showTags && extractedTags}}" class="tags-section">
-    <view class="card">
-      <view class="flex-between mb-12">
-        <text class="text-bold">✅ AI 理解了您的需求</text>
-        <text class="text-muted" bindtap="resetAll">重新录音</text>
-      </view>
-      <view class="flex-row flex-wrap">
-        <text class="tag tag-primary" wx:if="{{extractedTags.peopleCount}}">
-          👥 {{extractedTags.peopleCount}}人
-        </text>
-        <text class="tag tag-success" wx:if="{{extractedTags.diningScene}}">
-          🍽️ {{extractedTags.diningScene}}
-        </text>
-        <text class="tag tag-warning" wx:if="{{extractedTags.budgetLevel}}">
-          💰 {{extractedTags.budgetLevel}}
-        </text>
-        <text class="tag tag-danger" wx:if="{{extractedTags.mealTime}}">
-          🕐 {{extractedTags.mealTime}}
-        </text>
-      </view>
-      <view class="flex-row flex-wrap" wx:if="{{extractedTags.tastePreferences && extractedTags.tastePreferences.length > 0}}">
-        <text class="tag tag-primary" wx:for="{{extractedTags.tastePreferences}}" wx:key="*this">
-          {{item}}
-        </text>
-      </view>
-    </view>
-    <button class="btn-primary" bindtap="doRecommend" loading="{{loading}}">
-      确认并生成推荐
-    </button>
-    <view class="tag-edit-hint text-muted mt-12" style="text-align:center">
-      标签不准确？重新录音即可修正
-    </view>
-  </view>
-
-  <!-- ===== 加载中 ===== -->
-  <view wx:if="{{loading}}" class="loading-section card mt-16">
-    <text class="text-bold">🤖 AI 正在分析推荐中...</text>
+  <!-- 4. Agent Pipeline 加载状态 -->
+  <view class="loading-section card glass-card" wx:if="{{loading}}">
+    <view class="loader"></view>
+    <text class="loading-title">🤖 智味 AI 推荐管线运行中...</text>
+    <text class="loading-subtitle">多智能体协同配餐，预计需要 10-25 秒</text>
+    
     <view class="agent-steps mt-16">
-      <view class="step {{currentStep >= 0 ? 'done' : ''}}">语音理解</view>
-      <view class="step {{currentStep >= 1 ? 'done' : ''}}">场景感知</view>
-      <view class="step {{currentStep >= 2 ? 'done' : ''}}">用户画像</view>
-      <view class="step {{currentStep >= 3 ? 'done' : ''}}">菜品匹配</view>
-      <view class="step {{currentStep >= 4 ? 'done' : ''}}">智能排序</view>
-      <view class="step {{currentStep >= 5 ? 'done' : ''}}">话术生成</view>
+      <view class="step {{currentStep >= 0 ? 'active' : ''}}">
+        <text class="step-icon">{{currentStep > 0 ? '✓' : '●'}}</text>
+        <text class="step-text">语音理解</text>
+      </view>
+      <view class="step {{currentStep >= 1 ? 'active' : ''}}">
+        <text class="step-icon">{{currentStep > 1 ? '✓' : '●'}}</text>
+        <text class="step-text">场景感知</text>
+      </view>
+      <view class="step {{currentStep >= 2 ? 'active' : ''}}">
+        <text class="step-icon">{{currentStep > 2 ? '✓' : '●'}}</text>
+        <text class="step-text">用户画像</text>
+      </view>
+      <view class="step {{currentStep >= 3 ? 'active' : ''}}">
+        <text class="step-icon">{{currentStep > 3 ? '✓' : '●'}}</text>
+        <text class="step-text">菜品匹配</text>
+      </view>
+      <view class="step {{currentStep >= 4 ? 'active' : ''}}">
+        <text class="step-icon">{{currentStep > 4 ? '✓' : '●'}}</text>
+        <text class="step-text">高毛利重排</text>
+      </view>
+      <view class="step {{currentStep >= 5 ? 'active' : ''}}">
+        <text class="step-icon">{{currentStep > 5 ? '✓' : '●'}}</text>
+        <text class="step-text">推荐话术</text>
+      </view>
     </view>
   </view>
 
-  <!-- ===== 推荐结果 ===== -->
-  <view wx:if="{{result}}" class="result-section">
+  <!-- 5. 推荐结果展示 -->
+  <view class="result-section" wx:if="{{result && !loading}}">
+    
+    <!-- 场景感知详情 -->
+    <view class="card glass-card" wx:if="{{result.sceneContext}}">
+      <view class="section-title">🏠 场景感知 (Agent 1)</view>
+      <view class="scene-grid">
+        <view class="scene-item" wx:if="{{result.sceneContext.tableType}}">
+          <text class="s-label">桌型</text>
+          <text class="s-val">{{result.sceneContext.tableType}}</text>
+        </view>
+        <view class="scene-item" wx:if="{{result.sceneContext.mealTime}}">
+          <text class="s-label">时段</text>
+          <text class="s-val">{{result.sceneContext.mealTime}}</text>
+        </view>
+        <view class="scene-item" wx:if="{{result.sceneContext.atmosphere}}">
+          <text class="s-label">氛围</text>
+          <text class="s-val">{{result.sceneContext.atmosphere}}</text>
+        </view>
+        <view class="scene-item" wx:if="{{result.sceneContext.estimatedPeopleCount}}">
+          <text class="s-label">人数估计</text>
+          <text class="s-val">{{result.sceneContext.estimatedPeopleCount}}人</text>
+        </view>
+      </view>
+    </view>
+
     <!-- 顾客画像 -->
-    <view class="card">
-      <view class="text-bold mb-12">👤 顾客画像</view>
+    <view class="card glass-card">
+      <view class="section-title">👤 顾客画像 (Agent 2)</view>
       <view class="profile-grid">
         <view class="profile-item" wx:if="{{result.userProfile.peopleCount}}">
-          <text class="text-muted">人数</text>
-          <text class="text-bold">{{result.userProfile.peopleCount}}人</text>
+          <text class="p-label">用餐人数</text>
+          <text class="p-val">{{result.userProfile.peopleCount}}人</text>
         </view>
         <view class="profile-item" wx:if="{{result.userProfile.diningScene}}">
-          <text class="text-muted">场景</text>
-          <text class="text-bold">{{result.userProfile.diningScene}}</text>
+          <text class="p-label">用餐场景</text>
+          <text class="p-val">{{result.userProfile.diningScene}}</text>
         </view>
         <view class="profile-item" wx:if="{{result.userProfile.estimatedConsumptionLevel}}">
-          <text class="text-muted">消费</text>
-          <text class="text-bold">{{result.userProfile.estimatedConsumptionLevel}}</text>
+          <text class="p-label">消费能力</text>
+          <text class="p-val">{{result.userProfile.estimatedConsumptionLevel}}</text>
+        </view>
+        <view class="profile-item" wx:if="{{result.userProfile.healthGoal}}">
+          <text class="p-label">健康目标</text>
+          <text class="p-val">{{result.userProfile.healthGoal}}</text>
+        </view>
+      </view>
+      
+      <view class="preference-list mt-12" wx:if="{{result.userProfile.possiblePreferences.length}}">
+        <text class="preference-tag" wx:for="{{result.userProfile.possiblePreferences}}" wx:key="*this">{{item}}</text>
+      </view>
+
+      <!-- 多人模式各顾客偏好明细 -->
+      <view class="guests-detail-section" wx:if="{{result.userProfile.guests && result.userProfile.guests.length > 0}}">
+        <view class="g-section-divider"></view>
+        <view class="g-section-title">👥 各顾客要求明细</view>
+        <view class="g-detail-list">
+          <view class="g-detail-item" wx:for="{{result.userProfile.guests}}" wx:key="name">
+            <view class="g-name-row">
+              <text class="g-name">👤 {{item.name}}</text>
+            </view>
+            <view class="g-tag-row">
+              <text class="badge badge-warning" wx:if="{{item.tastes && item.tastes.length}}">喜欢: {{item.tastes}}</text>
+              <text class="badge badge-danger" wx:if="{{item.avoidIngredients && item.avoidIngredients.length}}">忌口: {{item.avoidIngredients}}</text>
+              <text class="badge badge-danger" wx:if="{{item.allergens && item.allergens.length}}">过敏: {{item.allergens}}</text>
+              <text class="badge badge-warning" wx:if="{{item.diseases && item.diseases.length}}">禁忌: {{item.diseases}}</text>
+              <text class="badge badge-primary" wx:if="{{item.dietLifestyles && item.dietLifestyles.length}}">习惯: {{item.dietLifestyles}}</text>
+              <text class="badge badge-muted" wx:if="{{(!item.tastes || !item.tastes.length) && (!item.avoidIngredients || !item.avoidIngredients.length) && (!item.allergens || !item.allergens.length) && (!item.diseases || !item.diseases.length) && (!item.dietLifestyles || !item.dietLifestyles.length)}}">无特殊要求</text>
+            </view>
+          </view>
         </view>
       </view>
     </view>
 
-    <!-- 话术 -->
-    <view class="card script-card" wx:if="{{result.openingScript}}">
-      <view class="text-bold mb-12">💬 推荐话术</view>
+    <!-- 推荐话术 -->
+    <view class="card script-card glass-card" wx:if="{{result.openingScript}}">
+      <view class="section-title flex-between">
+        <text>💬 推荐开场话术 (Agent 5)</text>
+        <text class="copy-link" bindtap="copyScript" data-text="{{result.openingScript}}">复制</text>
+      </view>
       <text class="script-text">{{result.openingScript}}</text>
     </view>
 
     <!-- 推荐菜品 -->
-    <view class="text-bold mt-16 mb-12">⭐ 推荐菜品</view>
-    <view class="dish-card card" wx:for="{{result.recommendations}}" wx:key="dishId">
+    <view class="section-header-title">⭐ AI 智能排序菜品列表 (Agent 4)</view>
+
+    <block wx:if="{{result.recommendations && result.recommendations.length > 0}}">
+    <view class="dish-card card glass-card" wx:for="{{result.recommendations}}" wx:key="dishId">
       <view class="flex-between">
         <view class="flex-row">
           <text class="rank-badge">
             {{item.rank === 1 ? '🥇' : item.rank === 2 ? '🥈' : item.rank === 3 ? '🥉' : '#' + item.rank}}
           </text>
-          <view>
+          <view class="dish-title-box">
             <text class="text-bold dish-name">{{item.name}}</text>
-            <view class="flex-row mt-12">
-              <text class="tag tag-warning">¥{{item.price}}</text>
-              <text class="tag">{{item.calories}}kcal</text>
-              <text class="tag tag-success">蛋白{{item.protein}}g</text>
+            <view class="flex-row mt-12 flex-wrap">
+              <text class="badge badge-warning">¥{{item.price}}</text>
+              <text class="badge badge-muted">{{item.calories}}kcal</text>
+              <text class="badge badge-success">蛋白质{{item.protein}}g</text>
+              <text class="badge badge-danger" wx:if="{{item.suitableFor && item.suitableFor.length}}">适合: {{item.suitableFor}}</text>
             </view>
           </view>
         </view>
-        <text class="dish-score">{{item.score}}分</text>
+        <view class="score-box">
+          <text class="score-num">{{item.score}}</text>
+          <text class="score-label">智能分</text>
+        </view>
       </view>
+
       <view class="dish-reasons mt-12">
-        <text class="reason-line">📌 {{item.reason}}</text>
-        <text class="reason-line">🥗 {{item.nutritionComment}}</text>
-        <text class="reason-line">💰 {{item.costPerformanceComment}}</text>
+        <view class="reason-row"><text class="reason-emoji">📌</text><text class="reason-txt"><text class="text-bold">推荐理由：</text>{{item.reason}}</text></view>
+        <view class="reason-row"><text class="reason-emoji">🥗</text><text class="reason-txt"><text class="text-bold">营养评价：</text>{{item.nutritionComment}}</text></view>
+        <view class="reason-row"><text class="reason-emoji">💰</text><text class="reason-txt"><text class="text-bold">性价比评价：</text>{{item.costPerformanceComment}}</text></view>
       </view>
-      <!-- 话术 -->
-      <view class="dish-script" wx:if="{{result.dishScripts}}">
-        <text class="script-label">💬 话术：</text>
-        <text wx:for="{{result.dishScripts}}" wx:key="dishId" wx:if="{{item.dishId === it.dishId}}">
-          {{it.script}}
-        </text>
+
+      <!-- 针对性推荐话术 -->
+      <view class="dish-script-box" wx:if="{{result.dishScripts}}">
+        <block wx:for="{{result.dishScripts}}" wx:key="dishId" wx:for-item="ds">
+          <view class="dish-script-item" wx:if="{{ds.dishId === item.dishId}}">
+            <text class="script-label-small">💬 推荐说辞：</text>
+            <text class="script-text-small">{{ds.script}}</text>
+          </view>
+        </block>
       </view>
-      <!-- 采纳按钮 -->
-      <view class="mt-12 flex-between">
-        <text class="text-muted">{{adoptedDishes[item.dishId] ? '已采纳 ✓' : ''}}</text>
-        <button size="mini" type="primary" plain
-          bindtap="adoptDish" data-id="{{item.dishId}}"
-          disabled="{{adoptedDishes[item.dishId]}}">
-          {{adoptedDishes[item.dishId] ? '已采纳' : '顾客选了这道 ✓'}}
+
+      <!-- 采纳反馈 -->
+      <view class="dish-action-row mt-12 flex-between">
+        <view class="stepper-wrap" wx:if="{{!adoptedDishes[item.dishId]}}">
+          <text class="stepper-label">份数</text>
+          <view class="stepper">
+            <button class="stepper-btn" size="mini" bindtap="decreaseQty" data-id="{{item.dishId}}">-</button>
+            <text class="stepper-val">{{adoptQtys[item.dishId] || 1}}</text>
+            <button class="stepper-btn" size="mini" bindtap="increaseQty" data-id="{{item.dishId}}">+</button>
+          </view>
+        </view>
+        <view class="adopted-state" wx:else>
+          <text class="adopted-check">✓</text>
+          <text class="adopted-text">已采纳 {{adoptedDishes[item.dishId]}} 份</text>
+        </view>
+
+        <button class="btn-adopt" size="mini" type="primary" plain bindtap="adoptDish" data-id="{{item.dishId}}" wx:if="{{!adoptedDishes[item.dishId]}}">
+          顾客选了这道 ✓
         </button>
       </view>
     </view>
+    </block>
+    <view class="empty-tip" wx:else>未匹配到合适菜品，请尝试调整口味或场景</view>
 
-    <view class="mt-16 mb-12" style="text-align:center">
-      <button size="mini" type="default" bindtap="resetAll">开始新推荐</button>
+    <!-- 结束新推荐 -->
+    <view class="mt-16 mb-12 flex-center" style="text-align:center">
+      <button class="btn-primary" style="width: 80%" bindtap="resetAll">开始新的配餐推荐</button>
     </view>
   </view>
 </view>

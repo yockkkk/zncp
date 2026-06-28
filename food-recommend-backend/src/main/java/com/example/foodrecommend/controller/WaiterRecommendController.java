@@ -6,8 +6,10 @@ import com.example.foodrecommend.common.Result;
 import com.example.foodrecommend.dto.FeedbackRequestDTO;
 import com.example.foodrecommend.dto.RecommendRequestDTO;
 import com.example.foodrecommend.dto.RecommendWithScriptDTO;
+import com.example.foodrecommend.dto.TagInputDTO;
 import com.example.foodrecommend.entity.RecommendationFeedback;
 import com.example.foodrecommend.entity.RecommendationRecord;
+import com.example.foodrecommend.entity.User;
 import com.example.foodrecommend.mapper.RecommendationFeedbackMapper;
 import com.example.foodrecommend.mapper.RecommendationRecordMapper;
 import com.example.foodrecommend.security.UserPrincipal;
@@ -15,7 +17,9 @@ import com.example.foodrecommend.entity.Dish;
 import com.example.foodrecommend.service.DishService;
 import com.example.foodrecommend.service.RecommendService;
 import com.example.foodrecommend.service.RecommendationHistoryService;
+import com.example.foodrecommend.service.UserService;
 import com.example.foodrecommend.service.UserProfileService;
+import com.example.foodrecommend.service.VoiceUnderstandingService;
 import com.example.foodrecommend.dto.UserProfileDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -48,6 +52,8 @@ public class WaiterRecommendController {
     private final DishService dishService;
     private final UserProfileService userProfileService;
     private final RecommendationHistoryService historyService;
+    private final VoiceUnderstandingService voiceUnderstandingService;
+    private final UserService userService;
 
     /**
      * 查看可推荐菜品列表（只显示上架 + 有库存 + 向量已生成的）
@@ -97,6 +103,33 @@ public class WaiterRecommendController {
     }
 
     /**
+     * 语音理解预览（将语音转换为结构化标签，让用户确认）
+     */
+    @Operation(summary = "语音理解预览", description = "Agent 0 将语音文本解析为结构化标签")
+    @PostMapping("/recommend/voice/preview")
+    public Result<TagInputDTO> previewVoice(@RequestBody Map<String, String> body) {
+        String voiceText = body.get("voiceText");
+        if (voiceText == null || voiceText.trim().isEmpty()) {
+            throw new BusinessException("语音文本不能为空");
+        }
+        TagInputDTO tags = voiceUnderstandingService.parseVoiceText(voiceText);
+        return Result.success("解析成功", tags);
+    }
+
+    /**
+     * 语音音频转文字
+     */
+    @Operation(summary = "音频转文字", description = "上传小程序录音文件并转写为中文文本")
+    @PostMapping("/audio/transcribe")
+    public Result<String> transcribeAudio(@RequestParam("file") MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException("音频文件不能为空");
+        }
+        String text = recommendService.transcribeAudio(file);
+        return Result.success("识别成功", text);
+    }
+
+    /**
      * 根据手机号查询顾客的长期记忆/历史画像
      */
     @Operation(summary = "查询顾客画像", description = "根据手机号获取顾客长期记忆/历史偏好")
@@ -141,10 +174,15 @@ public class WaiterRecommendController {
      */
     @Operation(summary = "推荐详情", description = "获取单条推荐记录及其反馈明细")
     @GetMapping("/history/{id}")
-    public Result<RecommendationRecord> getRecordDetail(@PathVariable Long id) {
+    public Result<RecommendationRecord> getRecordDetail(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
         RecommendationRecord record = recordMapper.selectById(id);
         if (record == null) {
             throw new BusinessException("记录不存在");
+        }
+        if (!record.getWaiterId().equals(principal.getUserId())) {
+            throw new BusinessException("您无权查看该推荐记录");
         }
         List<RecommendationFeedback> feedbacks = feedbackMapper.selectList(
                 new LambdaQueryWrapper<RecommendationFeedback>()
@@ -170,6 +208,9 @@ public class WaiterRecommendController {
         RecommendationRecord record = recordMapper.selectById(recordId);
         if (record == null) {
             throw new BusinessException("推荐记录不存在");
+        }
+        if (!record.getWaiterId().equals(principal.getUserId())) {
+            throw new BusinessException("您无权为此推荐记录提交反馈");
         }
 
         boolean isAdopted = Boolean.TRUE.equals(req.getAdopted());
@@ -266,5 +307,21 @@ public class WaiterRecommendController {
         res.put("waiterId", principal.getUserId());
         res.put("revenue", totalRevenue);
         return Result.success(res);
+    }
+
+    /**
+     * 更新服务员个人信息（实名、手机号）
+     */
+    @Operation(summary = "更新我的资料", description = "更新当前服务员的真实姓名和手机号")
+    @PutMapping("/profile")
+    public Result<User> updateMyProfile(
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal UserPrincipal principal) {
+
+        String realName = body.get("realName");
+        String phone = body.get("phone");
+
+        User updated = userService.updateProfile(principal.getUserId(), realName, phone);
+        return Result.success("更新成功", updated);
     }
 }

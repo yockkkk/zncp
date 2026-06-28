@@ -11,6 +11,8 @@ import com.example.foodrecommend.service.DishService;
 import com.example.foodrecommend.service.RecommendService;
 import com.example.foodrecommend.service.UserProfileService;
 import com.example.foodrecommend.service.RecommendationHistoryService;
+import com.example.foodrecommend.service.UserService;
+import com.example.foodrecommend.service.VoiceUnderstandingService;
 import com.fasterxml.jackson.databind.ObjectMapper;import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -77,6 +79,12 @@ class WaiterRecommendControllerTest {
 
     @MockBean
     private RecommendationHistoryService historyService;
+
+    @MockBean
+    private VoiceUnderstandingService voiceUnderstandingService;
+
+    @MockBean
+    private UserService userService;
 
     // SecurityConfig requires JwtAuthenticationFilter; mock it and configure call-through below.
     @MockBean
